@@ -1,117 +1,50 @@
-<!doctype html>
-<html lang="vi">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Gallery Demo</title>
-<style>
-  body{font-family:system-ui,Helvetica,Arial;margin:18px;background:#f4f4f6;color:#111}
-  h1{font-size:20px;margin-bottom:12px}
-  .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
-  .card{background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 6px 12px rgba(0,0,0,0.06);cursor:pointer}
-  .card img{width:100%;height:160px;object-fit:cover;display:block}
-  .meta{padding:8px;font-size:13px;color:#333}
-  /* modal */
-  #modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;z-index:999}
-  #modal .box{background:#fff;border-radius:8px;max-width:980px;width:94%;max-height:92%;overflow:auto;padding:12px}
-  #modal .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-  #modal .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
-  #modal .grid img{width:100%;height:110px;object-fit:cover;border-radius:6px}
-  .btn{background:#007bff;color:#fff;padding:6px 10px;border-radius:6px;border:0;cursor:pointer}
-  .small{font-size:13px;color:#666}
-</style>
-</head>
-<body>
-  <h1>Demo Gallery — Click 1 thumb để mở 6 ảnh</h1>
-
-  <div class="row" id="thumbs">
-    <!-- JS sẽ chèn thumb -->
-  </div>
-
-  <!-- modal -->
-  <div id="modal" onclick="if(event.target.id==='modal'){closeModal()}">
-    <div class="box" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
-      <div class="top">
-        <div>
-          <strong id="info-title">Barcode</strong>
-          <div class="small" id="info-sub">#size — giá</div>
-        </div>
-        <div>
-          <button class="btn" onclick="copyBarcode()">Copy barcode</button>
-          <button class="btn" style="background:#666;margin-left:8px" onclick="closeModal()">Close</button>
-        </div>
-      </div>
-      <div class="grid" id="detail-grid"></div>
-    </div>
-  </div>
-
 <script>
-// Dữ liệu demo: 2 item, mỗi item map tới 6 ảnh trong folder images/
 const DATA = [
   {
-    id: "item1",
-    title: "42150056789",
-    sub: "#42 - 850k",
     thumbs: "images/item1-thumb.jpg",
-    details: [
-      "images/item1-1.jpg","images/item1-2.jpg","images/item1-3.jpg",
-      "images/item1-4.jpg","images/item1-5.jpg","images/item1-6.jpg"
+    gallery: [
+      "images/item1-1.jpg",
+      "images/item1-2.jpg",
+      "images/item1-3.jpg",
+      "images/item1-4.jpg",
+      "images/item1-5.jpg",
+      "images/item1-6.jpg"
     ]
   },
   {
-    id: "item2",
-    title: "42150012345",
-    sub: "#43 - 999k",
     thumbs: "images/item2-thumb.jpg",
-    details: [
-      "images/item2-1.jpg","images/item2-2.jpg","images/item2-3.jpg",
-      "images/item2-4.jpg","images/item2-5.jpg","images/item2-6.jpg"
+    gallery: [
+      "images/item2-1.jpg",
+      "images/item2-2.jpg",
+      "images/item2-3.jpg",
+      "images/item2-4.jpg",
+      "images/item2-5.jpg",
+      "images/item2-6.jpg"
     ]
   }
 ];
 
-// render thumbnails
-const thumbsEl = document.getElementById("thumbs");
-DATA.forEach((it, idx) => {
-  const d = document.createElement("div");
-  d.className = "card";
-  d.innerHTML = <img src="${it.thumbs}" alt="${it.title}"><div class="meta"><strong>${it.title}</strong><div class="small">${it.sub}</div></div>;
-  d.onclick = () => openModal(idx);
-  thumbsEl.appendChild(d);
-});
+const basePath = (function(){
+  let p = location.pathname;
+  if(p.endsWith("/")) return p;
+  return p.replace(/\/[^\/]*$/, "/");
+})();
 
-function openModal(index){
-  const it = DATA[index];
-  document.getElementById("info-title").textContent = it.title;
-  document.getElementById("info-sub").textContent = it.sub;
-  const grid = document.getElementById("detail-grid");
-  grid.innerHTML = "";
-  it.details.forEach(src=>{
-    const img = document.createElement("img");
-    img.src = src;
-    img.onclick = () => window.open(src, "_blank");
-    grid.appendChild(img);
+const container = document.getElementById("gallery");
+DATA.forEach(it => {
+  const img = document.createElement("img");
+  img.className = "thumb";
+  img.src = basePath + it.thumbs;
+  img.addEventListener("click", () => {
+    document.getElementById("lightbox").style.display = "flex";
+    const box = document.getElementById("lightbox-content");
+    box.innerHTML = "";
+    it.gallery.forEach(url => {
+      const g = document.createElement("img");
+      g.src = basePath + url;
+      box.appendChild(g);
+    });
   });
-  // store last opened barcode for copy
-  window._lastBarcode = it.title;
-  document.getElementById("modal").style.display = "flex";
-}
-
-function closeModal(){
-  document.getElementById("modal").style.display = "none";
-}
-
-function copyBarcode(){
-  const b = window._lastBarcode || "";
-  if(!b) return;
-  // try Clipboard API first
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(b).then(()=> alert("Copied: " + b));
-  }else{
-    // fallback: prompt
-    prompt("Copy barcode", b);
-  }
-}
+  container.appendChild(img);
+});
 </script>
-</body>
-</html>
