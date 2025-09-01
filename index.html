@@ -1,104 +1,197 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Gallery giày</title>
+  <title>Gallery giày — manifest viewer</title>
+
+  <!-- Cấu hình mặc định: chỉnh WORKER_BASE ở đây trước khi commit lên repo,
+       hoặc override bằng global window.__WORKER_BASE__ trước khi load script -->
+  <meta name="worker-base" content="https://shoes-worker.lapproak0.workers.dev">
+
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #f5f5f5;
-    }
-    header {
-      background: #222;
-      color: #fff;
-      padding: 10px 20px;
-      font-size: 20px;
-    }
-    #gallery {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 15px;
-      padding: 20px;
-    }
-    .shoe {
-      background: #fff;
-      border-radius: 8px;
-      padding: 10px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .shoe img {
-      width: 100%;
-      height: auto;
-      border-radius: 4px;
-    }
-    .shoe h3 {
-      margin: 8px 0 4px;
-      font-size: 16px;
-    }
-    .shoe button {
-      padding: 6px 10px;
-      border: none;
-      border-radius: 4px;
-      background: #007bff;
-      color: #fff;
-      cursor: pointer;
-    }
-    .shoe button:hover {
-      background: #0056b3;
-    }
+    :root { --bg:#f1f6fb; --card:#fff; --muted:#666; --accent:#2b7be4; }
+    html,body{height:100%}
+    body{font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin:0; padding:18px; background:var(--bg); color:#111}
+    header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+    h1{font-size:1.1rem;margin:0}
+    #tabs{margin-bottom:12px}
+    .tab{margin-right:6px;padding:6px 10px;border-radius:8px;border:1px solid rgba(0,0,0,0.06);background:var(--card);cursor:pointer}
+    .tab.active{box-shadow:0 1px 0 rgba(0,0,0,0.04);outline:2px solid rgba(43,123,228,0.12)}
+    #content{min-height:320px;background:var(--card);padding:12px;border-radius:8px;box-shadow:0 2px 8px rgba(15,30,60,0.03)}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+    .card{border:1px solid rgba(0,0,0,0.04);padding:8px;border-radius:8px;background:#fafafa;display:flex;flex-direction:column}
+    .card img{width:100%;height:120px;object-fit:cover;border-radius:6px}
+    .barcode-row{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:0.9rem}
+    .btn{padding:6px 8px;border-radius:6px;border:1px solid rgba(0,0,0,0.08);background:transparent;cursor:pointer}
+    .note{color:var(--muted);font-size:0.9rem}
+    .error{color:#b00}
+    footer{margin-top:14px;font-size:0.85rem;color:var(--muted)}
+    @media (max-width:520px){ .card img{height:100px} }
   </style>
 </head>
 <body>
-  <header>Kho giày</header>
-  <div id="gallery">Đang tải dữ liệu...</div>
+  <header>
+    <h1>Gallery giày</h1>
+    <div class="note">Manifest loader + preview</div>
+  </header>
+
+  <div id="tabs" role="tablist" aria-label="Sizes tabs"></div>
+  <main id="content" role="main">Đang khởi tạo…</main>
+
+  <footer>
+    <div class="note">Chạy local: <code>python -m http.server</code> rồi mở <code>http://localhost:8000</code></div>
+  </footer>
 
   <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-      const gallery = document.getElementById('gallery');
-      try {
-        const res = await fetch("https://shoes-worker.lapproak0.workers.dev/manifest.json");
-        const manifest = await res.json();
+  /* ===========================
+     Config: lấy từ meta hoặc override bằng window.__WORKER_BASE__
+     ============================*/
+  const META_WORKER = document.querySelector('meta[name="worker-base"]')?.getAttribute('content') || '';
+  const WORKER_BASE = (window.__WORKER_BASE__ && String(window.__WORKER_BASE__)) || META_WORKER || '';
 
-        gallery.innerHTML = "";
+  /* Helpers */
+  const el = id => document.getElementById(id);
+  const safeSet = (html) => { const c = el('content'); if (c) c.innerHTML = html; else console.warn('Missing #content'); };
 
-        Object.keys(manifest).forEach(barcode => {
-          const item = manifest[barcode];
-          const div = document.createElement("div");
-          div.className = "shoe";
+  /* Normalize manifest — giữ logic robust cho nhiều shape */
+  function normalizeManifest(raw) {
+    console.log('RAW manifest:', raw);
+    if (!raw) return { sizes: [] };
+    if (Array.isArray(raw)) return { sizes: raw };
 
-          const img = document.createElement("img");
-          img.src = item.images?.[0] || "";
-          img.alt = barcode;
+    if (raw.sizes && Array.isArray(raw.sizes)) {
+      return { sizes: raw.sizes.map(s => ({
+        size: String(s.size ?? s.name ?? s.sizeName ?? ''),
+        barcodes: Array.isArray(s.barcodes) ? s.barcodes.map(b => ({ code: String(b.code ?? ''), images: Array.isArray(b.images) ? b.images.slice() : [] })) : []
+      }))};
+    }
 
-          const h3 = document.createElement("h3");
-          h3.textContent = barcode;
-
-          const btn = document.createElement("button");
-          btn.textContent = "Copy ảnh detail";
-          btn.onclick = () => {
-            if (item.images?.length > 0) {
-              const urls = item.images.join("\n");
-              navigator.clipboard.writeText(urls).then(() => {
-                alert("Đã copy link ảnh cho " + barcode);
-              });
-            } else {
-              alert("Không có ảnh cho " + barcode);
-            }
-          };
-
-          div.appendChild(img);
-          div.appendChild(h3);
-          div.appendChild(btn);
-          gallery.appendChild(div);
-        });
-      } catch (e) {
-        console.error("Lỗi khi load manifest:", e);
-        gallery.innerHTML = "Không load được dữ liệu.";
+    if (typeof raw === 'object') {
+      const sizes = [];
+      for (const [k,v] of Object.entries(raw)) {
+        if (k === 'meta' || k === 'version') continue;
+        if (v && typeof v === 'object' && !Array.isArray(v)) {
+          const barcodes = [];
+          let looksLikeMap = false;
+          for (const [code, imgs] of Object.entries(v)) {
+            if (Array.isArray(imgs)) { looksLikeMap = true; barcodes.push({ code: String(code), images: imgs.slice() }); }
+          }
+          if (looksLikeMap) { sizes.push({ size: String(k).replace(/^Size/i,''), barcodes }); continue; }
+          if (Array.isArray(v.barcodes)) { sizes.push({ size: String(k).replace(/^Size/i,''), barcodes: v.barcodes.map(b=>({ code: String(b.code||''), images: Array.isArray(b.images)? b.images.slice():[] })) }); continue; }
+        }
+        if (Array.isArray(v)) {
+          sizes.push({ size: String(k).replace(/^Size/i,''), barcodes: v.map(b => ({ code: String(b.code||b[0]||''), images: Array.isArray(b.images) ? b.images.slice() : [] })) });
+        }
       }
+      return { sizes };
+    }
+    return { sizes: [] };
+  }
+
+  /* Main load + render */
+  let manifest = null;
+
+  async function loadManifest() {
+    if (!WORKER_BASE) {
+      safeSet('<p class="error">WORKER_BASE chưa cấu hình. Thêm meta[name="worker-base"] hoặc gán window.__WORKER_BASE__ trước khi script chạy.</p>');
+      console.error('WORKER_BASE unset');
+      return;
+    }
+    const url = new URL('/manifest.json', WORKER_BASE).toString();
+    try {
+      console.info('Fetching manifest:', url);
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) {
+        const body = await res.text().catch(()=>'(no body)');
+        throw new Error(`HTTP ${res.status} — ${body}`);
+      }
+      const raw = await res.json();
+      manifest = normalizeManifest(raw);
+      renderTabs();
+    } catch (err) {
+      console.error('Failed to load manifest:', err);
+      safeSet(`<p class="error">Không load được manifest: ${String(err.message)}</p><p class="note">Kiểm tra Network & Console (F12).</p>`);
+    }
+  }
+
+  function renderTabs() {
+    const tabsEl = el('tabs'); const contentEl = el('content');
+    if (!tabsEl || !contentEl) { console.error('#tabs/#content missing'); return; }
+    tabsEl.innerHTML = '';
+    if (!manifest || !Array.isArray(manifest.sizes) || manifest.sizes.length === 0) {
+      contentEl.innerHTML = '<p class="note">Không có size trong manifest.</p>';
+      return;
+    }
+    manifest.sizes.forEach((s, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'tab' + (idx===0 ? ' active': '');
+      btn.setAttribute('role','tab');
+      btn.textContent = s.size || '(no name)';
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+        btn.classList.add('active');
+        renderSize(s);
+      });
+      tabsEl.appendChild(btn);
     });
+    renderSize(manifest.sizes[0]);
+  }
+
+  function renderSize(sizeObj) {
+    const contentEl = el('content');
+    contentEl.innerHTML = '';
+    const grid = document.createElement('div'); grid.className = 'grid';
+    const barcodes = Array.isArray(sizeObj.barcodes) ? sizeObj.barcodes : [];
+    barcodes.forEach(bc => {
+      const card = document.createElement('div'); card.className = 'card';
+      const thumbName = (Array.isArray(bc.images) && bc.images.find(x=>/thumb/i.test(x))) || (Array.isArray(bc.images) ? bc.images[0] : null) || 'thumb.jpeg';
+      const thumbPath = new URL(`/shoes/${encodeURIComponent(sizeObj.size)}/${encodeURIComponent(bc.code)}/${thumbName}`, WORKER_BASE).toString();
+
+      const img = document.createElement('img'); img.src = thumbPath; img.alt = bc.code || '';
+      img.onerror = () => { img.style.opacity = '0.6'; img.style.objectFit = 'contain'; };
+      card.appendChild(img);
+
+      const row = document.createElement('div'); row.className = 'barcode-row';
+      const codeEl = document.createElement('div'); codeEl.textContent = `<${bc.code}>`;
+      row.appendChild(codeEl);
+
+      const actions = document.createElement('div');
+      const copyBtn = document.createElement('button'); copyBtn.className='btn'; copyBtn.textContent='Copy links';
+      copyBtn.addEventListener('click', async () => {
+        const links = (bc.images || []).map(f => new URL(`/shoes/${encodeURIComponent(sizeObj.size)}/${encodeURIComponent(bc.code)}/${f}`, WORKER_BASE).toString()).join('\n');
+        try {
+          await navigator.clipboard.writeText(links);
+          alert('Đã copy links');
+        } catch (e) {
+          alert('Không thể copy: ' + (e && e.message ? e.message : String(e)));
+        }
+      });
+      actions.appendChild(copyBtn);
+      row.appendChild(actions);
+
+      card.appendChild(row);
+      grid.appendChild(card);
+    });
+
+    contentEl.appendChild(grid);
+  }
+
+  /* Global error handlers: show friendly message in page and log to console */
+  window.addEventListener('error', ev => {
+    console.error('Unhandled error:', ev.error || ev.message, ev);
+    safeSet(`<p class="error">Có lỗi: ${String(ev.message || ev.error || 'unknown')}</p>`);
+  });
+  window.addEventListener('unhandledrejection', ev => {
+    console.error('Unhandled rejection:', ev.reason);
+    safeSet(`<p class="error">Unhandled promise rejection: ${String(ev.reason)}</p>`);
+  });
+
+  /* Start only after DOM ready */
+  document.addEventListener('DOMContentLoaded', () => {
+    loadManifest();
+  });
+
   </script>
 </body>
 </html>
