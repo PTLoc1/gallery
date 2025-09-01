@@ -1,0 +1,123 @@
+<script>
+const WORKER_BASE = "https://shoes-worker.lapproak0.workers.dev"; // <- THAY BẰNG URL Worker của bạn
+
+let manifest = null;
+const tabsEl = document.getElementById('tabs');
+const contentEl = document.getElementById('content');
+const modal = document.getElementById('modal');
+const modalGrid = document.getElementById('modalGrid');
+const modalTitle = document.getElementById('modalTitle');
+const closeModal = document.getElementById('closeModal');
+const downloadModal = document.getElementById('downloadModal');
+
+async function loadManifest(){
+  try{
+    const r = await fetch(WORKER_BASE + '/manifest.json', {cache:'no-store'});
+    if(!r.ok) throw new Error('Không load được manifest.json (HTTP '+r.status+')');
+    manifest = await r.json();
+    renderTabs();
+  }catch(err){
+    contentEl.innerHTML = '<p style="color:#b00">Không load được manifest từ Worker:</p><pre>'+err.message+'</pre>';
+  }
+}
+
+function renderTabs(){
+  tabsEl.innerHTML = '';
+  (manifest.sizes || []).forEach((s, idx)=>{
+    const b = document.createElement('button');
+    b.className = 'tab' + (idx===0?' active':'');
+    b.textContent = s.size;
+    b.onclick = ()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active'); renderSize(s)};
+    tabsEl.appendChild(b);
+  });
+  if((manifest.sizes||[]).length) renderSize(manifest.sizes[0]);
+  else contentEl.innerHTML = '<p>Không có size trong manifest.</p>';
+}
+
+function renderSize(sizeObj){
+  contentEl.innerHTML = '';
+  const grid = document.createElement('div'); grid.className='grid';
+  sizeObj.barcodes.forEach(bc=>{
+    const card = document.createElement('div'); card.className='card';
+    const thumbName = bc.images.find(i=>/thumb/i.test(i)) || bc.images[0];
+    const thumbPath = `${WORKER_BASE}/${sizeObj.size}/${bc.code}/${thumbName}`;
+    const img = document.createElement('img'); img.src = thumbPath; img.alt = bc.code;
+    img.onerror = ()=>{ img.style.opacity=0.6; img.style.objectFit='contain' };
+    img.onclick = ()=>openModal(sizeObj.size, bc);
+    card.appendChild(img);
+
+    // buttons container
+    const btnWrap = document.createElement('div');
+    btnWrap.style.display='flex'; btnWrap.style.justifyContent='space-between'; btnWrap.style.marginTop='8px';
+    
+    const btn = document.createElement('button'); btn.className='barcode-btn'; btn.textContent = `<${bc.code}>`;
+    btn.onclick = ()=>downloadBarcode(sizeObj.size, bc);
+    btnWrap.appendChild(btn);
+
+    // Copy button
+    const copyBtn = document.createElement('button'); copyBtn.className='barcode-btn';
+    copyBtn.textContent = 'Copy';
+    copyBtn.onclick = (e)=>{ e.stopPropagation(); copyImageToClipboard(thumbPath); };
+    btnWrap.appendChild(copyBtn);
+
+    card.appendChild(btnWrap);
+    grid.appendChild(card);
+  });
+  contentEl.appendChild(grid);
+}
+
+function openModal(size, barcode){
+  modalTitle.textContent = `Size ${size} — ${barcode.code}`;
+  modalGrid.innerHTML = '';
+  const imgs = barcode.images.map(fname => `${WORKER_BASE}/${size}/${barcode.code}/${fname}`);
+  imgs.forEach((src, idx)=>{
+    const wrapper = document.createElement('div');
+    const im = document.createElement('img'); im.src = src; im.alt = '';
+    wrapper.appendChild(im);
+    modalGrid.appendChild(wrapper);
+  });
+  downloadModal.onclick = ()=>downloadBarcode(size, barcode);
+  modal.classList.add('open'); modal.setAttribute('aria-hidden', 'false');
+}
+
+closeModal.onclick = ()=>{ modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); }
+modal.onclick = (e)=>{ if(e.target===modal) closeModal.onclick(); }
+
+async function downloadBarcode(size, barcode){
+  try{
+    const zip = new JSZip();
+    const folder = zip.folder(`${size}_${barcode.code}`);
+    for(const fname of barcode.images){
+      const url = `${WORKER_BASE}/${size}/${barcode.code}/${fname}`;
+      try{
+        const res = await fetch(url);
+        if(!res.ok) { console.warn('Failed to fetch', url); continue; }
+        const blob = await res.blob();
+        folder.file(fname, blob);
+      }catch(err){ console.warn('fetch error', err); }
+    }
+    const blob = await zip.generateAsync({type:'blob'});
+    saveAs(blob, `${size}_${barcode.code}.zip`);
+  }catch(err){
+    alert('Lỗi khi đóng gói zip: '+err.message);
+  }
+}
+
+// COPY IMAGE TO CLIPBOARD
+async function copyImageToClipboard(url){
+  try{
+    const res = await fetch(url, {mode:'cors'});
+    if(!res.ok) throw new Error('Không fetch được ảnh: ' + res.status);
+    const blob = await res.blob();
+    // require ClipboardItem support
+    const data = [new ClipboardItem({ [blob.type]: blob })];
+    await navigator.clipboard.write(data);
+    alert('Đã copy ảnh vào clipboard — hãy paste (Ctrl+V) vào nơi cần.');
+  }catch(err){
+    alert('Không copy được ảnh: ' + err.message + '\\nHãy thử bấm chuột phải -> Copy image (nếu trình duyệt cho phép).');
+  }
+}
+
+// initial load
+loadManifest();
+</script>
