@@ -1,145 +1,140 @@
-<!doctype html>
-<html lang="vi">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Gallery giày</title>
-<link rel="icon" href="data:;base64,iVBORw0KGgo=">
-<style>
-  :root{--accent:#0b6}
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;background:#f5f7fb;color:#0b1220}
-  header{background:#fff;padding:12px 16px;box-shadow:0 2px 6px rgba(10,10,10,0.06);position:sticky;top:0;z-index:20}
-  .tabs{display:flex;gap:8px;overflow:auto;padding-bottom:6px}
-  .tab{padding:8px 12px;border-radius:8px;background:#e6eef7;border:1px solid #d3e0f3;cursor:pointer;white-space:nowrap}
-  .tab.active{background:var(--accent);color:white}
-  main{padding:16px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
-  .card{background:white;border-radius:10px;padding:8px;box-shadow:0 1px 4px rgba(12,15,30,0.06);text-align:center;display:flex;flex-direction:column;gap:8px}
-  .card img{width:100%;height:160px;object-fit:cover;border-radius:8px;cursor:pointer}
-  .barcode-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
-  .btn{padding:6px 8px;border-radius:6px;border:1px solid #cbd5e1;background:transparent;cursor:pointer}
-  .modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;z-index:50;align-items:center;justify-content:center}
-  .modal.open{display:flex}
-  .modal-content{background:white;width:90%;height:85%;border-radius:12px;display:flex;flex-direction:column;overflow:auto}
-  .modal-header{padding:10px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between}
-  .modal-body{padding:10px;overflow:auto}
-  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .two-col img{width:100%;height:auto;border-radius:6px;display:block}
-  @media(max-width:700px){.two-col{grid-template-columns:1fr}}
-</style>
-</head>
-<body>
-  <header>
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-      <div style="display:flex;flex-direction:column">
-        <strong>Gallery giày</strong>
-        <small>Tabs theo Size — bấm ảnh để xem chi tiết (2 cột) — Copy links / Copy images có sẵn</small>
-      </div>
-      <div><button id="refreshBtn" class="btn">Refresh</button></div>
-    </div>
-    <div class="tabs" id="tabs"></div>
-  </header>
-
-  <main>
-    <div id="content"></div>
-  </main>
-
-  <!-- modal -->
-  <div id="modal" class="modal" role="dialog" aria-hidden="true">
-    <div class="modal-content">
-      <div class="modal-header">
-        <div><strong id="modalTitle"></strong></div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button id="downloadModal" class="btn">Tải tất cả</button>
-          <button id="closeModal" class="btn">Đóng</button>
-        </div>
-      </div>
-      <div class="modal-body">
-        <div id="modalGrid" class="two-col"></div>
-      </div>
-    </div>
-  </div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-
 <script>
-const WORKER_BASE = "https://shoes-worker.lapproak0.workers.dev"; // <- worker URL you provided
+// Worker base (giữ nguyên)
+const WORKER_BASE = "https://shoes-worker.lapproak0.workers.dev";
 
+// --- Utility: normalize manifest to expected shape ---
+function normalizeManifest(raw) {
+  console.log("RAW manifest:", raw);
+  // If already in expected shape
+  if (!raw) return { sizes: [] };
+  if (Array.isArray(raw)) return { sizes: raw };
+
+  if (raw.sizes && Array.isArray(raw.sizes)) {
+    // ensure each entry has 'size' and 'barcodes' array
+    const normalized = raw.sizes.map(s => ({
+      size: (s.size !== undefined ? String(s.size) : (s.name || s.sizeName || "")),
+      barcodes: Array.isArray(s.barcodes) ? s.barcodes.map(b => ({
+        code: b.code + "",
+        images: Array.isArray(b.images) ? b.images.slice() : []
+      })) : []
+    }));
+    return { sizes: normalized };
+  }
+
+  // If manifest is a mapping: { "Size35": { "123": ["thumb.jpg", ...], ... }, ... }
+  if (typeof raw === "object") {
+    const sizes = [];
+    for (const [k, v] of Object.entries(raw)) {
+      // skip known top-level keys like metadata
+      if (k === "meta" || k === "version") continue;
+
+      // If v is object containing barcodes->images map
+      if (v && typeof v === "object" && !Array.isArray(v)) {
+        // Case: v has keys that are barcode codes mapping to array of filenames
+        const barcodes = [];
+        let looksLikeMap = false;
+        for (const [code, imgs] of Object.entries(v)) {
+          if (Array.isArray(imgs)) {
+            looksLikeMap = true;
+            barcodes.push({ code: String(code), images: imgs.slice() });
+          }
+        }
+        if (looksLikeMap) {
+          // k might be "Size35" or "35"
+          const sizeName = String(k).replace(/^Size/i, "");
+          sizes.push({ size: sizeName, barcodes });
+          continue;
+        }
+
+        // Or maybe v itself already has structure { barcodes: [...] }
+        if (Array.isArray(v.barcodes)) {
+          sizes.push({
+            size: String(k).replace(/^Size/i, ""),
+            barcodes: v.barcodes.map(b => ({ code: String(b.code), images: Array.isArray(b.images) ? b.images.slice() : [] }))
+          });
+          continue;
+        }
+      }
+
+      // If k looks like numeric size and v is array of barcodes
+      if (Array.isArray(v)) {
+        // assume array of barcodes with shape { code, images }
+        sizes.push({ size: String(k).replace(/^Size/i, ""), barcodes: v.map(b => ({ code: String(b.code||b[0]||""), images: Array.isArray(b.images) ? b.images.slice() : [] })) });
+        continue;
+      }
+    }
+    return { sizes };
+  }
+
+  // fallback
+  return { sizes: [] };
+}
+
+// --- New safe manifest loader + renderer glue ---
 let manifest = null;
-const tabsEl = document.getElementById('tabs');
-const contentEl = document.getElementById('content');
-const modal = document.getElementById('modal');
-const modalGrid = document.getElementById('modalGrid');
-const modalTitle = document.getElementById('modalTitle');
-const closeModal = document.getElementById('closeModal');
-const downloadModal = document.getElementById('downloadModal');
-
-async function loadManifest(){
-  try{
-    const r = await fetch(WORKER_BASE + '/manifest.json', {cache:'no-store'});
-    if(!r.ok) throw new Error('Không load manifest: HTTP '+r.status);
-    manifest = await r.json();
-    renderTabs();
-    appendNote('Manifest loaded.');
-  }catch(err){
-    contentEl.innerHTML = '<p style="color:#b00">Không load được manifest: '+err.message+'</p>';
+async function loadManifest() {
+  try {
+    const res = await fetch(WORKER_BASE + '/manifest.json', { cache: 'no-store' });
+    if (!res.ok) {
+      const txt = await res.text().catch(()=>"(no body)");
+      throw new Error('HTTP ' + res.status + ' - ' + txt);
+    }
+    const raw = await res.json();
+    manifest = normalizeManifest(raw);
+    console.log("NORMALIZED manifest:", manifest);
+    renderTabs(); // call your existing render logic but ensure it reads manifest.sizes
+  } catch (err) {
+    // show user-friendly message and detailed console
+    document.getElementById('content').innerHTML = `<p style="color:#b00">Không load được manifest: ${err.message}</p>`;
+    console.error("Failed to load/normalize manifest:", err);
   }
 }
 
-function appendNote(msg){
-  console.log(msg);
-}
-
+// Replace existing renderTabs / renderSize to use normalized data
 function renderTabs(){
+  const tabsEl = document.getElementById('tabs');
+  const contentEl = document.getElementById('content');
   tabsEl.innerHTML = '';
-  (manifest.sizes || []).forEach((s, idx)=>{
-    const b = document.createElement('button');
-    b.className = 'tab' + (idx===0?' active':'');
-    b.textContent = s.size;
-    b.onclick = ()=>{ document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); b.classList.add('active'); renderSize(s); };
-    tabsEl.appendChild(b);
+  if (!manifest || !Array.isArray(manifest.sizes) || manifest.sizes.length === 0) {
+    contentEl.innerHTML = '<p>Không có size trong manifest.</p>';
+    return;
+  }
+  manifest.sizes.forEach((s, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'tab' + (idx===0 ? ' active' : '');
+    btn.textContent = s.size;
+    btn.onclick = ()=>{ document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); btn.classList.add('active'); renderSize(s); };
+    tabsEl.appendChild(btn);
   });
-  if((manifest.sizes||[]).length) renderSize(manifest.sizes[0]);
-  else contentEl.innerHTML = '<p>Không có size trong manifest.</p>';
+  renderSize(manifest.sizes[0]);
 }
 
-function renderSize(sizeObj){
+function renderSize(sizeObj) {
+  const contentEl = document.getElementById('content');
   contentEl.innerHTML = '';
-  const grid = document.createElement('div'); grid.className='grid';
-  sizeObj.barcodes.forEach(bc=>{
-    const card = document.createElement('div'); card.className='card';
-    const thumbName = bc.images.find(i=>/thumb/i.test(i)) || bc.images[0];
-    const thumbPath = `${WORKER_BASE}/Shoes/${size}/${barcode}/${thumbName}`;
-    const PUBLIC_BASE = "https://pub-9a763a2453ba41939860c4caded896a0.r2.dev";
-    const img = `${PUBLIC_BASE}/Shoes/${size}/${barcode}/${file}`;
-    // const img = document.createElement('img');
-    img.src = thumbPath; img.alt = bc.code;
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  const barcodes = Array.isArray(sizeObj.barcodes) ? sizeObj.barcodes : [];
+  barcodes.forEach(bc => {
+    const card = document.createElement('div'); card.className = 'card';
+    const thumbName = (Array.isArray(bc.images) && bc.images.find(x=>/thumb/i.test(x))) || (Array.isArray(bc.images) ? bc.images[0] : null) || 'thumb.jpeg';
+    const thumbPath = `${WORKER_BASE}/shoes/${sizeObj.size}/${bc.code}/${thumbName}`;
+    const img = document.createElement('img'); img.src = thumbPath; img.alt = bc.code;
     img.onerror = ()=>{ img.style.opacity=0.6; img.style.objectFit='contain' };
     img.onclick = ()=>openModal(sizeObj.size, bc);
-
     card.appendChild(img);
 
     const row = document.createElement('div'); row.className='barcode-row';
     const codeEl = document.createElement('div'); codeEl.textContent = `<${bc.code}>`;
     row.appendChild(codeEl);
-
     const actions = document.createElement('div');
-    // Download ZIP
-    const dl = document.createElement('button'); dl.className='btn'; dl.textContent='Tải Zip';
-    dl.onclick = ()=>downloadBarcode(sizeObj.size, bc);
-    actions.appendChild(dl);
-
-    // Copy links
+    // copy links button
     const copyLinksBtn = document.createElement('button'); copyLinksBtn.className='btn'; copyLinksBtn.textContent='Copy links';
-    copyLinksBtn.onclick = ()=>copyLinks(sizeObj.size, bc);
+    copyLinksBtn.onclick = ()=> {
+      const links = (bc.images||[]).map(f=>`${WORKER_BASE}/shoes/${sizeObj.size}/${bc.code}/${f}`).join('\\n');
+      navigator.clipboard.writeText(links).then(()=>alert('Đã copy links'));
+    };
     actions.appendChild(copyLinksBtn);
-
-    // Copy images
-    const copyImgsBtn = document.createElement('button'); copyImgsBtn.className='btn'; copyImgsBtn.textContent='Copy images';
-    copyImgsBtn.onclick = ()=>copyImages(sizeObj.size, bc);
-    actions.appendChild(copyImgsBtn);
-
     row.appendChild(actions);
     card.appendChild(row);
 
@@ -148,85 +143,5 @@ function renderSize(sizeObj){
   contentEl.appendChild(grid);
 }
 
-function openModal(size, barcode){
-  modalTitle.textContent = `Size ${size} — ${barcode.code}`;
-  modalGrid.innerHTML = '';
-  const imgs = barcode.images.map(fname => `${WORKER_BASE}/${size}/${barcode.code}/${fname}`);
-  imgs.forEach((src, idx)=>{
-    const wrapper = document.createElement('div');
-    const im = document.createElement('img'); im.src = src; im.alt = '';
-    wrapper.appendChild(im);
-    modalGrid.appendChild(wrapper);
-  });
-  downloadModal.onclick = ()=>downloadBarcode(size, barcode);
-  modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
-}
-
-closeModal.onclick = ()=>{ modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); }
-modal.onclick = (e)=>{ if(e.target===modal) closeModal.onclick(); }
-
-async function downloadBarcode(size, barcode){
-  try{
-    const zip = new JSZip();
-    const folder = zip.folder(`${size}_${barcode.code}`);
-    for(const fname of barcode.images){
-      const url = `${WORKER_BASE}/${size}/${barcode.code}/${fname}`;
-      try{
-        const res = await fetch(url);
-        if(!res.ok) { console.warn('Failed', url); continue; }
-        const blob = await res.blob();
-        folder.file(fname, blob);
-      }catch(err){ console.warn('fetch error', err); }
-    }
-    const blob = await zip.generateAsync({type:'blob'});
-    saveAs(blob, `${size}_${barcode.code}.zip`);
-  }catch(err){
-    alert('Lỗi khi đóng gói zip: '+err.message);
-  }
-}
-
-async function copyLinks(size, barcode) {
-  try {
-    const links = barcode.images.map(f=>`${WORKER_BASE}/${size}/${barcode.code}/${f}`).join('\\n');
-    await navigator.clipboard.writeText(links);
-    alert('Đã copy links vào clipboard');
-  } catch (e) {
-    alert('Không copy được links: ' + e.message);
-  }
-}
-
-async function copyImages(size, barcode) {
-  try {
-    const blobs = [];
-    for (const f of barcode.images) {
-      const url = `${WORKER_BASE}/${size}/${barcode.code}/${f}`;
-      const r = await fetch(url, { mode: 'cors' });
-      if (!r.ok) throw new Error('Fetch failed ' + r.status);
-      const b = await r.blob();
-      blobs.push(b);
-    }
-    // create ClipboardItems
-    const items = blobs.map(b => new ClipboardItem({ [b.type]: b }));
-    await navigator.clipboard.write(items);
-    alert('Đã copy ảnh vào clipboard (paste trực tiếp vào chat/ứng dụng hỗ trợ).');
-  } catch (e) {
-    // fallback to copy links
-    console.warn('copy images failed', e);
-    if (confirm('Không thể copy ảnh trực tiếp (trình duyệt hạn chế). Copy links thay thế?')) {
-      copyLinks(size, barcode);
-    } else {
-      alert('Không copy được ảnh: ' + e.message);
-    }
-  }
-}
-
-// refresh button
-document.getElementById('refreshBtn').onclick = loadManifest;
-
-// initial load
-loadManifest();
+// ensure openModal/download functions use same prefix; define or keep yours
 </script>
-</body>
-</html>
-
-
