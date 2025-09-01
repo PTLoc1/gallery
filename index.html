@@ -1,5 +1,70 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Gallery giày</title>
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<style>
+  :root{--accent:#0b6}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;background:#f5f7fb;color:#0b1220}
+  header{background:#fff;padding:12px 16px;box-shadow:0 2px 6px rgba(10,10,10,0.06);position:sticky;top:0;z-index:20}
+  .tabs{display:flex;gap:8px;overflow:auto;padding-bottom:6px}
+  .tab{padding:8px 12px;border-radius:8px;background:#e6eef7;border:1px solid #d3e0f3;cursor:pointer;white-space:nowrap}
+  .tab.active{background:var(--accent);color:white}
+  main{padding:16px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+  .card{background:white;border-radius:10px;padding:8px;box-shadow:0 1px 4px rgba(12,15,30,0.06);text-align:center;display:flex;flex-direction:column;gap:8px}
+  .card img{width:100%;height:160px;object-fit:cover;border-radius:8px;cursor:pointer}
+  .barcode-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .btn{padding:6px 8px;border-radius:6px;border:1px solid #cbd5e1;background:transparent;cursor:pointer}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;z-index:50;align-items:center;justify-content:center}
+  .modal.open{display:flex}
+  .modal-content{background:white;width:90%;height:85%;border-radius:12px;display:flex;flex-direction:column;overflow:auto}
+  .modal-header{padding:10px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between}
+  .modal-body{padding:10px;overflow:auto}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .two-col img{width:100%;height:auto;border-radius:6px;display:block}
+  @media(max-width:700px){.two-col{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+  <header>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div style="display:flex;flex-direction:column">
+        <strong>Gallery giày</strong>
+        <small>Tabs theo Size — bấm ảnh để xem chi tiết (2 cột) — Copy links / Copy images có sẵn</small>
+      </div>
+      <div><button id="refreshBtn" class="btn">Refresh</button></div>
+    </div>
+    <div class="tabs" id="tabs"></div>
+  </header>
+
+  <main>
+    <div id="content"></div>
+  </main>
+
+  <!-- modal -->
+  <div id="modal" class="modal" role="dialog" aria-hidden="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div><strong id="modalTitle"></strong></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button id="downloadModal" class="btn">Tải tất cả</button>
+          <button id="closeModal" class="btn">Đóng</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div id="modalGrid" class="two-col"></div>
+      </div>
+    </div>
+  </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
 <script>
-const WORKER_BASE = "https://shoes-worker.lapproak0.workers.dev"; // <- THAY BẰNG URL Worker của bạn
+const WORKER_BASE = "https://shoes-worker.lapproak0.workers.dev"; // <- worker URL you provided
 
 let manifest = null;
 const tabsEl = document.getElementById('tabs');
@@ -13,12 +78,17 @@ const downloadModal = document.getElementById('downloadModal');
 async function loadManifest(){
   try{
     const r = await fetch(WORKER_BASE + '/manifest.json', {cache:'no-store'});
-    if(!r.ok) throw new Error('Không load được manifest.json (HTTP '+r.status+')');
+    if(!r.ok) throw new Error('Không load manifest: HTTP '+r.status);
     manifest = await r.json();
     renderTabs();
+    appendNote('Manifest loaded.');
   }catch(err){
-    contentEl.innerHTML = '<p style="color:#b00">Không load được manifest từ Worker:</p><pre>'+err.message+'</pre>';
+    contentEl.innerHTML = '<p style="color:#b00">Không load được manifest: '+err.message+'</p>';
   }
+}
+
+function appendNote(msg){
+  console.log(msg);
 }
 
 function renderTabs(){
@@ -27,7 +97,7 @@ function renderTabs(){
     const b = document.createElement('button');
     b.className = 'tab' + (idx===0?' active':'');
     b.textContent = s.size;
-    b.onclick = ()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active'); renderSize(s)};
+    b.onclick = ()=>{ document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); b.classList.add('active'); renderSize(s); };
     tabsEl.appendChild(b);
   });
   if((manifest.sizes||[]).length) renderSize(manifest.sizes[0]);
@@ -44,23 +114,32 @@ function renderSize(sizeObj){
     const img = document.createElement('img'); img.src = thumbPath; img.alt = bc.code;
     img.onerror = ()=>{ img.style.opacity=0.6; img.style.objectFit='contain' };
     img.onclick = ()=>openModal(sizeObj.size, bc);
+
     card.appendChild(img);
 
-    // buttons container
-    const btnWrap = document.createElement('div');
-    btnWrap.style.display='flex'; btnWrap.style.justifyContent='space-between'; btnWrap.style.marginTop='8px';
-    
-    const btn = document.createElement('button'); btn.className='barcode-btn'; btn.textContent = `<${bc.code}>`;
-    btn.onclick = ()=>downloadBarcode(sizeObj.size, bc);
-    btnWrap.appendChild(btn);
+    const row = document.createElement('div'); row.className='barcode-row';
+    const codeEl = document.createElement('div'); codeEl.textContent = `<${bc.code}>`;
+    row.appendChild(codeEl);
 
-    // Copy button
-    const copyBtn = document.createElement('button'); copyBtn.className='barcode-btn';
-    copyBtn.textContent = 'Copy';
-    copyBtn.onclick = (e)=>{ e.stopPropagation(); copyImageToClipboard(thumbPath); };
-    btnWrap.appendChild(copyBtn);
+    const actions = document.createElement('div');
+    // Download ZIP
+    const dl = document.createElement('button'); dl.className='btn'; dl.textContent='Tải Zip';
+    dl.onclick = ()=>downloadBarcode(sizeObj.size, bc);
+    actions.appendChild(dl);
 
-    card.appendChild(btnWrap);
+    // Copy links
+    const copyLinksBtn = document.createElement('button'); copyLinksBtn.className='btn'; copyLinksBtn.textContent='Copy links';
+    copyLinksBtn.onclick = ()=>copyLinks(sizeObj.size, bc);
+    actions.appendChild(copyLinksBtn);
+
+    // Copy images
+    const copyImgsBtn = document.createElement('button'); copyImgsBtn.className='btn'; copyImgsBtn.textContent='Copy images';
+    copyImgsBtn.onclick = ()=>copyImages(sizeObj.size, bc);
+    actions.appendChild(copyImgsBtn);
+
+    row.appendChild(actions);
+    card.appendChild(row);
+
     grid.appendChild(card);
   });
   contentEl.appendChild(grid);
@@ -77,7 +156,7 @@ function openModal(size, barcode){
     modalGrid.appendChild(wrapper);
   });
   downloadModal.onclick = ()=>downloadBarcode(size, barcode);
-  modal.classList.add('open'); modal.setAttribute('aria-hidden', 'false');
+  modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
 }
 
 closeModal.onclick = ()=>{ modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); }
@@ -91,7 +170,7 @@ async function downloadBarcode(size, barcode){
       const url = `${WORKER_BASE}/${size}/${barcode.code}/${fname}`;
       try{
         const res = await fetch(url);
-        if(!res.ok) { console.warn('Failed to fetch', url); continue; }
+        if(!res.ok) { console.warn('Failed', url); continue; }
         const blob = await res.blob();
         folder.file(fname, blob);
       }catch(err){ console.warn('fetch error', err); }
@@ -103,21 +182,46 @@ async function downloadBarcode(size, barcode){
   }
 }
 
-// COPY IMAGE TO CLIPBOARD
-async function copyImageToClipboard(url){
-  try{
-    const res = await fetch(url, {mode:'cors'});
-    if(!res.ok) throw new Error('Không fetch được ảnh: ' + res.status);
-    const blob = await res.blob();
-    // require ClipboardItem support
-    const data = [new ClipboardItem({ [blob.type]: blob })];
-    await navigator.clipboard.write(data);
-    alert('Đã copy ảnh vào clipboard — hãy paste (Ctrl+V) vào nơi cần.');
-  }catch(err){
-    alert('Không copy được ảnh: ' + err.message + '\\nHãy thử bấm chuột phải -> Copy image (nếu trình duyệt cho phép).');
+async function copyLinks(size, barcode) {
+  try {
+    const links = barcode.images.map(f=>`${WORKER_BASE}/${size}/${barcode.code}/${f}`).join('\\n');
+    await navigator.clipboard.writeText(links);
+    alert('Đã copy links vào clipboard');
+  } catch (e) {
+    alert('Không copy được links: ' + e.message);
   }
 }
+
+async function copyImages(size, barcode) {
+  try {
+    const blobs = [];
+    for (const f of barcode.images) {
+      const url = `${WORKER_BASE}/${size}/${barcode.code}/${f}`;
+      const r = await fetch(url, { mode: 'cors' });
+      if (!r.ok) throw new Error('Fetch failed ' + r.status);
+      const b = await r.blob();
+      blobs.push(b);
+    }
+    // create ClipboardItems
+    const items = blobs.map(b => new ClipboardItem({ [b.type]: b }));
+    await navigator.clipboard.write(items);
+    alert('Đã copy ảnh vào clipboard (paste trực tiếp vào chat/ứng dụng hỗ trợ).');
+  } catch (e) {
+    // fallback to copy links
+    console.warn('copy images failed', e);
+    if (confirm('Không thể copy ảnh trực tiếp (trình duyệt hạn chế). Copy links thay thế?')) {
+      copyLinks(size, barcode);
+    } else {
+      alert('Không copy được ảnh: ' + e.message);
+    }
+  }
+}
+
+// refresh button
+document.getElementById('refreshBtn').onclick = loadManifest;
 
 // initial load
 loadManifest();
 </script>
+</body>
+</html>
