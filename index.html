@@ -113,7 +113,8 @@ function renderSize(sizeObj){
     const thumbPath = `${WORKER_BASE}/Shoes/${size}/${barcode}/${thumbName}`;
     const PUBLIC_BASE = "https://pub-9a763a2453ba41939860c4caded896a0.r2.dev";
     const img = `${PUBLIC_BASE}/Shoes/${size}/${barcode}/${file}`;
-    // const img = document.createElement('img'); img.src = thumbPath; img.alt = bc.code;
+    // const img = document.createElement('img');
+    img.src = thumbPath; img.alt = bc.code;
     img.onerror = ()=>{ img.style.opacity=0.6; img.style.objectFit='contain' };
     img.onclick = ()=>openModal(sizeObj.size, bc);
 
@@ -227,4 +228,5 @@ loadManifest();
 </script>
 </body>
 </html>
+
 
