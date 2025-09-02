@@ -11,9 +11,10 @@
     }
     body{font-family:system-ui,Arial;margin:0;background:#f0f6fb;color:#082033}
     header{background:var(--header-bg);padding:12px 16px;box-shadow:0 2px 6px rgba(10,10,10,0.06);position:sticky;top:0;z-index:30}
-    .top-row{display:flex;gap:12px;align-items:center;justify-content:space-between}
+    .top-row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap; /* allow wrapping on small screens */}
     .brand{font-weight:700;color:var(--accent)}
-    .search-wrap{flex:1;margin-left:12px}
+    .search-wrap{flex:1 1 420px; /* grow, shrink, base width 420px */margin-left:12px;min-width:160px;max-width:calc(100% - 200px); /* leave space for buttons on the right */}
+    .search-input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);font-size:14px;box-sizing:border-box;}
     .search-input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);font-size:14px}
     .tabs{display:flex;gap:8px;overflow:auto;padding:8px;margin-top:8px}
     .tab{padding:8px 12px;border-radius:8px;background:#eaf6ff;border:1px solid #d6ecff;cursor:pointer;white-space:nowrap}
@@ -367,3 +368,4 @@ document.addEventListener('DOMContentLoaded', loadManifest);
 </script>
 </body>
 </html>
+
