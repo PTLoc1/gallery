@@ -269,6 +269,11 @@ function makeCard(size, bc, withCheckbox = false) {
   const viewBtn = document.createElement('button'); viewBtn.className='btn'; viewBtn.textContent='Xem';
   viewBtn.onclick = ()=>openDetails(size, bc);
   actions.appendChild(viewBtn);
+  const shareBtn = document.createElement('button');
+shareBtn.className = 'btn';
+shareBtn.textContent = 'Lưu/Share';
+shareBtn.onclick = ()=> shareMultipleImages(size, bc);
+actions.appendChild(shareBtn);
 
   row.appendChild(actions);
   card.appendChild(row);
@@ -383,6 +388,92 @@ function confirmPermanentDelete(size, barcode) {
   if (!confirm(`Xóa vĩnh viễn ${barcode} (Size ${size}) ?`)) return;
   permanentDelete(size, barcode);
 }
+// --- share multiple images (iOS 16.4+ / modern browsers) ---
+async function shareMultipleImages(size, barcodeObj) {
+  try {
+    const urls = (barcodeObj.images || []).map(f => `${WORKER_BASE}/${PREFIX}/${encodeURIComponent(size)}/${encodeURIComponent(barcodeObj.code)}/${encodeURIComponent(f)}`);
+    const files = [];
+    for (const u of urls) {
+      const r = await fetch(u, { mode: 'cors' });
+      if (!r.ok) throw new Error('Fetch failed ' + r.status + ' ' + u);
+      const blob = await r.blob();
+      const fname = decodeURIComponent(u.split('/').pop());
+      files.push(new File([blob], fname, { type: blob.type }));
+    }
+
+    if (navigator.canShare && navigator.canShare({ files })) {
+      await navigator.share({ files, title: 'Images ' + barcodeObj.code });
+      return;
+    } else {
+      // fallback: create merged image and open (user long-press to save)
+      await mergeImagesAndOpen(urls, size, barcodeObj);
+    }
+  } catch (err) {
+    console.error('shareMultipleImages error', err);
+    alert('Không thể share nhiều ảnh trực tiếp: ' + err.message + '\nSẽ thử mở ảnh ghép để lưu thủ công.');
+    const urls = (barcodeObj.images || []).map(f => `${WORKER_BASE}/${PREFIX}/${encodeURIComponent(size)}/${encodeURIComponent(barcodeObj.code)}/${encodeURIComponent(f)}`);
+    await mergeImagesAndOpen(urls, size, barcodeObj);
+  }
+}
+
+// --- helper: merge images into one PNG and open in new tab (fallback for iPhone) ---
+async function mergeImagesAndOpen(urls, size, barcodeObj) {
+  try {
+    // load image bitmaps
+    const bitmaps = [];
+    for (const u of urls) {
+      const r = await fetch(u, { mode:'cors' });
+      if (!r.ok) throw new Error('Fetch failed ' + r.status);
+      const blob = await r.blob();
+      const bmp = await createImageBitmap(blob);
+      bitmaps.push(bmp);
+    }
+    // simple 2-column layout
+    const gap = 8;
+    const colHeights = [0,0], colMaxW = [0,0];
+    for (let i=0;i<bitmaps.length;i++){
+      const col = i%2;
+      colMaxW[col] = Math.max(colMaxW[col], bitmaps[i].width);
+      colHeights[col] += bitmaps[i].height + gap;
+    }
+    const maxColWidth = 900;
+    const scale0 = colMaxW[0] ? Math.min(1, maxColWidth / colMaxW[0]) : 1;
+    const scale1 = colMaxW[1] ? Math.min(1, maxColWidth / colMaxW[1]) : 1;
+    const colW = Math.round(Math.max(colMaxW[0]*scale0, colMaxW[1]*scale1));
+    const canvasW = colW*2 + gap;
+    const canvasH = Math.round(Math.max(colHeights[0]*scale0, colHeights[1]*scale1) || 400);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = canvasW; canvas.height = canvasH;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,canvasW,canvasH);
+
+    const y = [0,0];
+    for (let i=0;i<bitmaps.length;i++){
+      const bm = bitmaps[i];
+      const col = i%2;
+      const scale = col===0 ? scale0 : scale1;
+      const drawW = Math.round(bm.width * scale);
+      const drawH = Math.round(bm.height * scale);
+      const x = col === 0 ? 0 : colW + gap;
+      ctx.drawImage(bm, 0,0,bm.width,bm.height, x, y[col], drawW, drawH);
+      y[col] += drawH + gap;
+    }
+
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/png', 0.92));
+    const url = URL.createObjectURL(blob);
+    // open in new tab so user long-press to save to Photos
+    const w = window.open(url, '_blank');
+    if (!w) {
+      const a = document.createElement('a'); a.href = url; a.target = '_blank'; document.body.appendChild(a); a.click(); a.remove();
+    }
+    setTimeout(()=>URL.revokeObjectURL(url), 60_000);
+  } catch (e) {
+    console.error('mergeImagesAndOpen error', e);
+    alert('Không thể tạo ảnh ghép: ' + e.message);
+  }
+}
+
 async function permanentDelete(size, barcode) {
   const key = getAdminKey();
   if (!key) { alert('Vui lòng Set Admin Key trước khi xóa'); return; }
@@ -529,3 +620,4 @@ init();
 </script>
 </body>
 </html>
+
