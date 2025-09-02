@@ -3,105 +3,128 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Gallery — Shoes</title>
+<title>Gallery — Shoes (internal)</title>
 <style>
-  :root{--accent:#2b82c9;--header-bg:#e6f3ff}
-  body{font-family:system-ui,Arial;margin:0;background:#f0f6fb;color:#072033}
-  header{background:var(--header-bg);padding:12px 16px;box-shadow:0 2px 6px rgba(10,10,10,0.06);position:sticky;top:0;z-index:30}
-  .top-row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-  .brand{font-weight:700;color:var(--accent)}
-  .search-wrap{flex:1 1 420px;margin-left:12px;min-width:160px;max-width:calc(100% - 200px)}
-  .search-input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);font-size:14px;box-sizing:border-box}
-  .tabs{display:flex;gap:8px;overflow:auto;padding:8px;margin-top:8px}
-  .tab{padding:8px 12px;border-radius:8px;background:#eaf6ff;border:1px solid #d6ecff;cursor:pointer;white-space:nowrap}
-  .tab.active{background:var(--accent);color:white}
-  main{padding:12px}
-  .status{padding:8px 12px;color:#345}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
-  .card{background:white;border-radius:8px;padding:8px;box-shadow:0 1px 4px rgba(12,15,30,0.06);text-align:center;display:flex;flex-direction:column;gap:8px;font-size:13px}
-  .card img{width:100%;height:110px;object-fit:cover;border-radius:6px;cursor:pointer}
-  .barcode-row{display:flex;justify-content:space-between;align-items:center;gap:6px}
-  .btn{padding:6px 8px;border-radius:6px;border:1px solid #cbd5e1;background:transparent;cursor:pointer;font-size:13px}
-  .modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;z-index:50;align-items:center;justify-content:center}
-  .modal.open{display:flex}
-  .modal-content{background:white;width:90%;height:85%;border-radius:12px;display:flex;flex-direction:column;overflow:auto}
-  .modal-header{padding:10px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between}
-  .modal-body{padding:10px;overflow:auto}
-  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .two-col img{width:100%;height:auto;border-radius:6px;display:block}
-  @media(max-width:700px){.two-col{grid-template-columns:1fr}}
-  .trash-item{background:#fff;padding:8px;border-radius:8px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
-  .small{font-size:13px;color:#444}
-  .muted{color:#666;font-size:13px}
-  .section-title{margin:12px 0 8px;font-weight:600}
+:root{--accent:#2b82c9;--header-bg:#e6f3ff}
+body{font-family:system-ui,Arial;margin:0;background:#f0f6fb;color:#072033}
+header{background:var(--header-bg);padding:12px 16px;box-shadow:0 2px 6px rgba(10,10,10,0.06);position:sticky;top:0;z-index:40}
+.top-row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.brand{font-weight:700;color:var(--accent)}
+.controls-right{display:flex;gap:8px;align-items:center}
+.search-wrap{flex:1 1 420px;margin-left:12px;min-width:160px;max-width:calc(100% - 280px)}
+.search-input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);font-size:14px;box-sizing:border-box}
+.tabs{display:flex;gap:8px;overflow:auto;padding:8px;margin-top:8px}
+.tab{padding:8px 12px;border-radius:8px;background:#eaf6ff;border:1px solid #d6ecff;cursor:pointer;white-space:nowrap}
+.tab.active{background:var(--accent);color:white}
+main{padding:12px}
+.status{padding:8px 12px;color:#345}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.card{background:white;border-radius:8px;padding:8px;box-shadow:0 1px 4px rgba(12,15,30,0.06);text-align:center;display:flex;flex-direction:column;gap:8px;font-size:13px;position:relative}
+.card img{width:100%;height:110px;object-fit:cover;border-radius:6px;cursor:pointer}
+.checkbox-select{position:absolute;left:8px;top:8px;z-index:10}
+.actions-bar{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.btn{padding:6px 8px;border-radius:6px;border:1px solid #cbd5e1;background:transparent;cursor:pointer;font-size:13px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;z-index:50;align-items:center;justify-content:center}
+.modal.open{display:flex}
+.modal-content{background:white;width:90%;height:85%;border-radius:12px;display:flex;flex-direction:column;overflow:auto}
+.modal-header{padding:10px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between}
+.modal-body{padding:10px;overflow:auto}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.two-col img{width:100%;height:auto;border-radius:6px;display:block}
+@media(max-width:700px){.two-col{grid-template-columns:1fr}}
+.small{font-size:13px;color:#444}
+.muted{color:#666;font-size:13px}
+.section-title{margin:12px 0 8px;font-weight:600}
+.warn{color:#b00;font-weight:600}
 </style>
 </head>
 <body>
-  <header>
-    <div class="top-row">
-      <div style="display:flex;align-items:center;gap:10px">
-        <div class="brand">Shoes Gallery</div>
-        <div style="font-size:13px;color:#0b4d74">(Internal)</div>
-      </div>
-
-      <div class="search-wrap">
-        <input id="searchInput" class="search-input" placeholder="Tìm theo barcode (VD: 146888) — Enter để tìm" />
-      </div>
-
-      <div style="display:flex;gap:8px;align-items:center">
-        <button id="refreshBtn" class="btn">Refresh manifest.json</button>
-      </div>
+<header>
+  <div class="top-row">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="brand">Shoes Gallery — Internal</div>
+      <div style="font-size:13px;color:#0b4d74">Quản lý nội bộ</div>
     </div>
 
-    <div id="tabs" class="tabs"></div>
-  </header>
+    <div class="search-wrap">
+      <input id="searchInput" class="search-input" placeholder="Tìm theo barcode (VD: 146888) — Enter để tìm" />
+    </div>
 
-  <main>
-    <div id="status" class="status">Đang tải manifest...</div>
-    <div id="content"></div>
-  </main>
-
-  <!-- modal minimal for confirm and add preview -->
-  <div id="modal" class="modal" role="dialog" aria-hidden="true">
-    <div class="modal-content">
-      <div class="modal-header">
-        <div><strong id="modalTitle"></strong></div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button id="modalClose" class="btn">Đóng</button>
-        </div>
-      </div>
-      <div class="modal-body" id="modalBody"></div>
+    <div class="controls-right">
+      <button id="setKeyBtn" class="btn">Set Admin Key</button>
+      <button id="refreshBtn" class="btn">Refresh manifest.json</button>
     </div>
   </div>
 
+  <div id="tabs" class="tabs"></div>
+</header>
+
+<main>
+  <div id="status" class="status">Đang tải manifest...</div>
+
+  <div id="selectActions" style="display:none;margin:8px 12px;">
+    <div class="actions-bar">
+      <div><strong>Chế độ chọn để xóa (vĩnh viễn trên R2):</strong></div>
+      <button id="deleteSelectedBtn" class="btn">Xóa đã chọn</button>
+      <div style="margin-left:12px;" class="muted">Lưu ý: hành động xóa là vĩnh viễn. Admin key được lấy từ Set Admin Key.</div>
+    </div>
+  </div>
+
+  <div id="content"></div>
+</main>
+
+<!-- modal -->
+<div id="modal" class="modal" role="dialog" aria-hidden="true">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div><strong id="modalTitle"></strong></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button id="modalClose" class="btn">Đóng</button>
+      </div>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
 <script>
-/* CONFIG */
+/* CONFIG: set your worker URL and prefix */
 const WORKER_BASE = "https://shoes-worker.lapproak0.workers.dev";
 const PREFIX = "Shoes";
 
+/* DOM refs */
 const statusEl = document.getElementById('status');
 const tabsEl = document.getElementById('tabs');
 const contentEl = document.getElementById('content');
 const searchInput = document.getElementById('searchInput');
+const setKeyBtn = document.getElementById('setKeyBtn');
+const refreshBtn = document.getElementById('refreshBtn');
+const selectActions = document.getElementById('selectActions');
+const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
 const modal = document.getElementById('modal');
 const modalTitle = document.getElementById('modalTitle');
 const modalBody = document.getElementById('modalBody');
 const modalClose = document.getElementById('modalClose');
 
-let manifestRaw = null; // raw from worker
-let manifest = null; // normalized: { sizes: [ { size, barcodes: [{code, images}] } ] }
-let trash = {}; // trash object from /trash.json
-let activeTab = 'all'; // 'all', 'size:<size>', 'add', 'trash'
+/* state */
+let manifestRaw = null;
+let manifest = null;
+let trash = {};
+let activeTab = 'all'; // 'all', 'size:<size>', 'add', 'trash', 'select-delete'
+let selectMode = false;
+let selectedItems = new Set(); // store "size|barcode"
 
+/* helpers */
 function logStatus(msg){ statusEl.textContent = msg; console.log(msg); }
+function getAdminKey() { return localStorage.getItem('admin_key_v1') || ''; }
+function setAdminKey(v) { if (v) localStorage.setItem('admin_key_v1', v); else localStorage.removeItem('admin_key_v1'); }
 
+/* manifest normalization */
 function normalizeManifest(raw) {
   if (!raw) return { sizes: [] };
   if (Array.isArray(raw)) return { sizes: raw };
   if (raw.sizes && Array.isArray(raw.sizes)) {
     return { sizes: raw.sizes.map(s => ({ size: String(s.size||s.name||""), barcodes: Array.isArray(s.barcodes) ? s.barcodes.map(b => ({ code: String(b.code), images: Array.isArray(b.images) ? b.images.slice() : [] })) : [] })) };
   }
-  // assume map: { "35": { "123": ["thumb.jpg", ...], ... } }
   const sizes = [];
   for (const [k, v] of Object.entries(raw)) {
     if (k === "meta" || k === "version") continue;
@@ -113,7 +136,6 @@ function normalizeManifest(raw) {
       sizes.push({ size: String(k), barcodes });
     }
   }
-  // sort sizes numerically if possible
   sizes.sort((a,b)=> {
     const ai = parseInt(a.size), bi = parseInt(b.size);
     if (!isNaN(ai) && !isNaN(bi)) return ai - bi;
@@ -122,16 +144,25 @@ function normalizeManifest(raw) {
   return { sizes };
 }
 
-async function fetchManifestAndTrash() {
+/* Fetch manifest and trash */
+async function fetchManifestAndTrash({ forceRefresh = false } = {}) {
   try {
     logStatus('Loading manifest...');
-    const r = await fetch(WORKER_BASE + '/manifest.json', { cache: 'no-store' });
-    if (!r.ok) throw new Error('manifest fetch ' + r.status);
-    manifestRaw = await r.json();
-    manifest = normalizeManifest(manifestRaw);
-    // load trash
+    if (forceRefresh) {
+      const key = getAdminKey();
+      if (!key) { alert('Vui lòng Set Admin Key trước khi refresh manifest.'); return; }
+      const r = await fetch(WORKER_BASE + '/refresh-manifest', { method:'POST', headers: { 'x-api-key': key }});
+      if (!r.ok) { const t = await r.text().catch(()=>r.statusText); throw new Error('Refresh failed: ' + t); }
+      manifestRaw = await r.json();
+    } else {
+      const r = await fetch(WORKER_BASE + '/manifest.json', { cache: 'no-store' });
+      if (!r.ok) { const t = await r.text().catch(()=>r.statusText); throw new Error('manifest fetch ' + r.status); }
+      manifestRaw = await r.json();
+    }
+    manifest = normalizeManifest(manifestRaw || {});
+    // trash
     const tr = await fetch(WORKER_BASE + '/trash.json', { cache: 'no-store' });
-    if (tr.ok) trash = await tr.json(); else trash = {};
+    trash = tr.ok ? await tr.json() : {};
     logStatus('Loaded manifest (sizes: ' + manifest.sizes.length + ')');
     buildTabs();
   } catch (err) {
@@ -141,40 +172,55 @@ async function fetchManifestAndTrash() {
   }
 }
 
-function buildTabs() {
+/* Build tabs: All, per-size, Add, (spacer) Trash, and Select-delete */
+function buildTabs(){
   tabsEl.innerHTML = '';
-  const allBtn = document.createElement('button'); allBtn.className = 'tab' + (activeTab==='all' ? ' active' : ''); allBtn.textContent = 'Tất cả';
-  allBtn.onclick = ()=>{ activeTab='all'; setActiveTab(); renderAll(); }; tabsEl.appendChild(allBtn);
-
-  // per-size tabs
+  const allBtn = createTabButton('Tất cả', 'all');
+  tabsEl.appendChild(allBtn);
   for (const s of manifest.sizes) {
-    const btn = document.createElement('button'); btn.className = 'tab' + (activeTab===('size:'+s.size) ? ' active' : '');
-    btn.textContent = s.size;
-    btn.onclick = ()=>{ activeTab = 'size:'+s.size; setActiveTab(); renderSize(s.size); };
+    const btn = createTabButton(String(s.size), 'size:' + s.size);
     tabsEl.appendChild(btn);
   }
+  const addBtn = createTabButton('Thêm', 'add'); tabsEl.appendChild(addBtn);
 
-  // Add tab
-  const addBtn = document.createElement('button'); addBtn.className = 'tab' + (activeTab==='add' ? ' active' : ''); addBtn.textContent = 'Thêm';
-  addBtn.onclick = ()=>{ activeTab='add'; setActiveTab(); renderAdd(); }; tabsEl.appendChild(addBtn);
+  // spacer
+  const spacer = document.createElement('div'); spacer.style.flex='1'; tabsEl.appendChild(spacer);
 
-  // Trash tab on right
-  const spacer = document.createElement('div'); spacer.style.flex = '1'; tabsEl.appendChild(spacer);
-  const trashBtn = document.createElement('button'); trashBtn.className = 'tab' + (activeTab==='trash' ? ' active' : ''); trashBtn.textContent = 'Đã xóa';
-  trashBtn.onclick = ()=>{ activeTab='trash'; setActiveTab(); renderTrash(); }; tabsEl.appendChild(trashBtn);
+  // select-delete tab
+  const selectBtn = createTabButton('Chọn để xóa', 'select-delete'); tabsEl.appendChild(selectBtn);
 
-  // initial render
+  const trashBtn = createTabButton('Đã xóa', 'trash'); tabsEl.appendChild(trashBtn);
+
+  // render active
   if (activeTab === 'all') renderAll();
   else if (activeTab.startsWith('size:')) renderSize(activeTab.split(':')[1]);
   else if (activeTab === 'add') renderAdd();
   else if (activeTab === 'trash') renderTrash();
+  else if (activeTab === 'select-delete') renderSelectDelete();
 }
 
-function setActiveTab(){
+function createTabButton(text, tabKey) {
+  const btn = document.createElement('button');
+  btn.className = 'tab' + (activeTab === tabKey ? ' active' : '');
+  btn.textContent = text;
+  btn.onclick = ()=> { activeTab = tabKey; setActiveButton(); renderAccording(); };
+  return btn;
+}
+function setActiveButton() {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  const text = activeTab === 'all' ? 'Tất cả' : activeTab.startsWith('size:') ? activeTab.split(':')[1] : activeTab === 'add' ? 'Thêm' : 'Đã xóa';
-  const btn = Array.from(document.querySelectorAll('.tab')).find(b => b.textContent === text);
+  const label = activeTab === 'all' ? 'Tất cả' : activeTab.startsWith('size:') ? activeTab.split(':')[1] : activeTab === 'add' ? 'Thêm' : activeTab === 'trash' ? 'Đã xóa' : 'Chọn để xóa';
+  const btn = Array.from(document.querySelectorAll('.tab')).find(b => b.textContent === label);
   if (btn) btn.classList.add('active');
+}
+function renderAccording(){
+  // hide selectActions by default
+  selectActions.style.display = 'none';
+  selectedItems.clear();
+  if (activeTab === 'all') renderAll();
+  else if (activeTab.startsWith('size:')) renderSize(activeTab.split(':')[1]);
+  else if (activeTab === 'add') renderAdd();
+  else if (activeTab === 'trash') renderTrash();
+  else if (activeTab === 'select-delete') renderSelectDelete();
 }
 
 function renderAll(){
@@ -183,10 +229,7 @@ function renderAll(){
     const h = document.createElement('div'); h.className='section-title'; h.textContent = 'Size ' + s.size;
     contentEl.appendChild(h);
     const grid = document.createElement('div'); grid.className='grid';
-    for (const bc of s.barcodes) {
-      const card = makeCard(s.size, bc);
-      grid.appendChild(card);
-    }
+    for (const bc of s.barcodes) grid.appendChild(makeCard(s.size, bc, /*withCheckbox*/ false));
     contentEl.appendChild(grid);
   }
 }
@@ -196,12 +239,21 @@ function renderSize(sizeStr){
   const s = manifest.sizes.find(x => String(x.size) === String(sizeStr));
   if (!s) { contentEl.innerHTML = '<div class="muted">Không có size này</div>'; return; }
   const grid = document.createElement('div'); grid.className='grid';
-  for (const bc of s.barcodes) grid.appendChild(makeCard(s.size, bc));
+  for (const bc of s.barcodes) grid.appendChild(makeCard(s.size, bc, /*withCheckbox*/ false));
   contentEl.appendChild(grid);
 }
 
-function makeCard(size, bc) {
+function makeCard(size, bc, withCheckbox = false) {
   const card = document.createElement('div'); card.className='card';
+  if (withCheckbox) {
+    const cb = document.createElement('input'); cb.type='checkbox'; cb.className='checkbox-select';
+    const key = `${size}|${bc.code}`;
+    cb.checked = selectedItems.has(key);
+    cb.onchange = (e)=> {
+      if (e.target.checked) selectedItems.add(key); else selectedItems.delete(key);
+    };
+    card.appendChild(cb);
+  }
   const thumbName = (Array.isArray(bc.images) && bc.images.find(x=>/thumb/i.test(x))) || (Array.isArray(bc.images) ? bc.images[0] : null) || 'thumb.jpeg';
   const src = `${WORKER_BASE}/${PREFIX}/${encodeURIComponent(size)}/${encodeURIComponent(bc.code)}/${encodeURIComponent(thumbName)}`;
   const img = document.createElement('img'); img.src = src; img.alt = bc.code;
@@ -212,10 +264,11 @@ function makeCard(size, bc) {
   const row = document.createElement('div'); row.className='barcode-row';
   const codeEl = document.createElement('div'); codeEl.textContent = `<${bc.code}>`; row.appendChild(codeEl);
 
+  // no per-card delete; actions can include 'view' or others
   const actions = document.createElement('div');
-  const delBtn = document.createElement('button'); delBtn.className='btn'; delBtn.textContent='Xóa';
-  delBtn.onclick = ()=>confirmSoftDelete(size, bc.code);
-  actions.appendChild(delBtn);
+  const viewBtn = document.createElement('button'); viewBtn.className='btn'; viewBtn.textContent='Xem';
+  viewBtn.onclick = ()=>openDetails(size, bc);
+  actions.appendChild(viewBtn);
 
   row.appendChild(actions);
   card.appendChild(row);
@@ -223,7 +276,6 @@ function makeCard(size, bc) {
 }
 
 function openDetails(size, bc) {
-  // show image list in modal (detail images)
   modalTitle.textContent = `Size ${size} — ${bc.code}`;
   modalBody.innerHTML = '';
   const imgs = bc.images || [];
@@ -238,46 +290,56 @@ function openDetails(size, bc) {
 modalClose.onclick = ()=>{ modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); }
 modal.onclick = (e)=>{ if (e.target === modal) modalClose.click(); }
 
-function confirmSoftDelete(size, barcode) {
-  // modal confirm
-  modalTitle.textContent = 'Xác nhận xóa (tạm)';
-  modalBody.innerHTML = `<p>Bạn có muốn chuyển <strong>${barcode}</strong> (Size ${size}) vào ĐÃ XÓA không? (Objects chưa bị xóa trên R2)</p>
-  <div style="display:flex;gap:8px"><button id="confirmDel" class="btn">Có — chuyển sang Đã xóa</button><button id="cancelDel" class="btn">Hủy</button></div>`;
-  modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
-  document.getElementById('confirmDel').onclick = async ()=> {
-    modalClose.click();
-    await softDelete(size, barcode);
-  };
-  document.getElementById('cancelDel').onclick = ()=> modalClose.click();
-}
-
-async function softDelete(size, barcode) {
-  try {
-    const key = prompt("Nhập ADMIN_KEY để thực hiện xóa tạm (nếu đã lưu ở localStorage, paste vào here). Nếu không nhớ, bấm Cancel.");
-    if (!key) { alert('Hủy xóa.'); return; }
-    const res = await fetch(WORKER_BASE + '/soft-delete', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': key },
-      body: JSON.stringify({ size, barcode })
-    });
-    if (!res.ok) {
-      const txt = await res.text().catch(()=>res.statusText);
-      throw new Error('Soft-delete failed: ' + res.status + ' ' + txt);
-    }
-    const j = await res.json();
-    await fetchManifestAndTrash();
-    alert('Đã chuyển vào Đã xóa: ' + barcode);
-  } catch (err) {
-    console.error(err);
-    alert('Lỗi soft-delete: ' + err.message);
+/* ----- Select-delete mode ----- */
+function renderSelectDelete() {
+  contentEl.innerHTML = '';
+  selectActions.style.display = 'block';
+  const gridContainer = document.createElement('div');
+  for (const s of manifest.sizes) {
+    const h = document.createElement('div'); h.className='section-title'; h.textContent = 'Size ' + s.size;
+    contentEl.appendChild(h);
+    const grid = document.createElement('div'); grid.className='grid';
+    for (const bc of s.barcodes) grid.appendChild(makeCard(s.size, bc, /*withCheckbox*/ true));
+    contentEl.appendChild(grid);
   }
 }
 
-async function renderTrash() {
+// delete selected items (single confirm, no second confirm)
+deleteSelectedBtn.onclick = async ()=> {
+  if (selectedItems.size === 0) return alert('Chưa chọn mục nào để xóa');
+  if (!confirm('Xóa các mục đã chọn? (Hành động sẽ xóa vĩnh viễn trên R2)')) return;
+  const key = getAdminKey();
+  if (!key) { alert('Vui lòng Set Admin Key trước khi xóa'); return; }
+  const items = Array.from(selectedItems).map(s => {
+    const [size, barcode] = s.split('|');
+    return { size, barcode };
+  });
+  try {
+    const r = await fetch(WORKER_BASE + '/bulk-delete', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'x-api-key': key },
+      body: JSON.stringify({ items })
+    });
+    if (!r.ok) {
+      const t = await r.text().catch(()=>r.statusText);
+      throw new Error('Delete failed: ' + t);
+    }
+    const j = await r.json();
+    alert('Xóa hoàn tất. deletedKeys: ' + (j.totalDeleted || 0));
+    // refresh manifest
+    await fetchManifestAndTrash();
+    // go back to All tab
+    activeTab = 'all'; renderAccording();
+  } catch (err) {
+    console.error(err); alert('Lỗi xóa: ' + err.message);
+  }
+};
+
+/* ----- Trash view (soft-delete) ----- */
+function renderTrash() {
   contentEl.innerHTML = '';
   const header = document.createElement('div'); header.className='section-title'; header.textContent = 'Đã xóa';
   contentEl.appendChild(header);
-  // trash is object map: { size: { barcode: { images:[], deletedAt } } }
   let any = false;
   for (const size of Object.keys(trash || {})) {
     const sizeHeader = document.createElement('div'); sizeHeader.className='section-title'; sizeHeader.textContent = 'Size ' + size;
@@ -286,15 +348,16 @@ async function renderTrash() {
     for (const barcode of Object.keys(trash[size] || {})) {
       any = true;
       const entry = trash[size][barcode];
-      const item = document.createElement('div'); item.className='trash-item';
+      const item = document.createElement('div'); item.className='card';
+      item.style.display='flex'; item.style.flexDirection='row'; item.style.alignItems='center'; item.style.gap='12px';
       const thumb = entry.images && entry.images[0] ? `${WORKER_BASE}/${PREFIX}/${encodeURIComponent(size)}/${encodeURIComponent(barcode)}/${encodeURIComponent(entry.images[0])}` : '';
-      const img = document.createElement('img'); img.src = thumb; img.style.width='90px'; img.style.height='70px'; img.style.objectFit='cover';
+      const img = document.createElement('img'); img.src = thumb; img.style.width='120px'; img.style.height='80px'; img.style.objectFit='cover';
       const info = document.createElement('div'); info.style.flex='1';
-      info.innerHTML = `<div><strong>${barcode}</strong></div><div class="muted">Xóa: ${new Date(entry.deletedAt).toLocaleString()}</div><div class="small">Ảnh: ${entry.images.length}</div>`;
+      info.innerHTML = `<div><strong>${barcode}</strong></div><div class="muted">Xóa: ${new Date(entry.deletedAt).toLocaleString()}</div><div class="small">ảnh: ${entry.images.length}</div>`;
       const actions = document.createElement('div');
       const restoreBtn = document.createElement('button'); restoreBtn.className='btn'; restoreBtn.textContent='Khôi phục';
       restoreBtn.onclick = ()=>restoreFromTrash(size, barcode);
-      const permBtn = document.createElement('button'); permBtn.className='btn'; permBtn.style.marginLeft='6px'; permBtn.textContent='Xóa vĩnh viễn';
+      const permBtn = document.createElement('button'); permBtn.className='btn'; permBtn.textContent='Xóa vĩnh viễn';
       permBtn.onclick = ()=>confirmPermanentDelete(size, barcode);
       actions.appendChild(restoreBtn); actions.appendChild(permBtn);
       item.appendChild(img); item.appendChild(info); item.appendChild(actions);
@@ -306,179 +369,111 @@ async function renderTrash() {
 }
 
 async function restoreFromTrash(size, barcode) {
+  const key = getAdminKey();
+  if (!key) { alert('Vui lòng Set Admin Key trước khi Restore'); return; }
   try {
-    const key = prompt("Nhập ADMIN_KEY để khôi phục (Restore).");
-    if (!key) return;
-    const res = await fetch(WORKER_BASE + '/restore', {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json', 'x-api-key': key },
-      body: JSON.stringify({ size, barcode })
-    });
-    if (!res.ok) throw new Error('Restore failed ' + res.status);
+    const r = await fetch(WORKER_BASE + '/restore', { method:'POST', headers: { 'Content-Type':'application/json', 'x-api-key': key }, body: JSON.stringify({ size, barcode })});
+    if (!r.ok) { const t = await r.text().catch(()=>r.statusText); throw new Error('Restore failed: ' + t); }
     await fetchManifestAndTrash();
     alert('Đã khôi phục ' + barcode);
-  } catch (err) {
-    console.error(err); alert('Restore error: ' + err.message);
-  }
+  } catch (err) { console.error(err); alert('Restore error: ' + err.message); }
 }
 
 function confirmPermanentDelete(size, barcode) {
-  modalTitle.textContent = 'Xác nhận xóa vĩnh viễn';
-  modalBody.innerHTML = `<p>Bạn sắp xóa vĩnh viễn <strong>${barcode}</strong> (Size ${size}) — tất cả files sẽ bị xóa trên R2. Hành động không thể hoàn tác.</p>
-    <div style="display:flex;gap:8px"><button id="confirmPerm" class="btn">Xóa vĩnh viễn</button><button id="cancelPerm" class="btn">Hủy</button></div>`;
-  modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
-  document.getElementById('confirmPerm').onclick = async ()=> {
-    modalClose.click();
-    await permanentDelete(size, barcode);
-  };
-  document.getElementById('cancelPerm').onclick = ()=> modalClose.click();
+  if (!confirm(`Xóa vĩnh viễn ${barcode} (Size ${size}) ?`)) return;
+  permanentDelete(size, barcode);
 }
-
 async function permanentDelete(size, barcode) {
+  const key = getAdminKey();
+  if (!key) { alert('Vui lòng Set Admin Key trước khi xóa'); return; }
   try {
-    const key = prompt("Nhập ADMIN_KEY để xóa vĩnh viễn.");
-    if (!key) return;
-    const res = await fetch(WORKER_BASE + '/permanent-delete', {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json', 'x-api-key': key },
-      body: JSON.stringify({ size, barcode })
-    });
-    if (!res.ok) {
-      const txt = await res.text().catch(()=>res.statusText);
-      throw new Error('Permanent delete failed: ' + res.status + ' ' + txt);
-    }
+    const r = await fetch(WORKER_BASE + '/permanent-delete', { method:'POST', headers: { 'Content-Type':'application/json', 'x-api-key': key }, body: JSON.stringify({ size, barcode })});
+    if (!r.ok) { const t = await r.text().catch(()=>r.statusText); throw new Error('Permanent delete failed: ' + t); }
     await fetchManifestAndTrash();
     alert('Đã xóa vĩnh viễn ' + barcode);
-  } catch (err) {
-    console.error(err); alert('Permanent delete error: ' + err.message);
-  }
+  } catch (err) { console.error(err); alert('Error: ' + err.message); }
 }
 
-/* ------- ADD tab (upload new pair) ------- */
+/* ----- Add tab ----- */
 function renderAdd() {
   contentEl.innerHTML = '';
-  const box = document.createElement('div');
-  box.style.background = '#fff'; box.style.padding = '12px'; box.style.borderRadius='8px';
-  // size select from manifest sizes + option to add new
-  const sizes = manifest.sizes.map(s => s.size);
-  const sizeLabel = document.createElement('label'); sizeLabel.textContent = 'Size: ';
+  const box = document.createElement('div'); box.style.background='#fff'; box.style.padding='12px'; box.style.borderRadius='8px';
+  // size dropdown
+  const sizes = manifest.sizes.map(s=>s.size);
   const sizeSelect = document.createElement('select'); sizeSelect.style.margin='6px';
-  for (const s of sizes) { const o = document.createElement('option'); o.value = s; o.textContent = s; sizeSelect.appendChild(o); }
-  const newOpt = document.createElement('option'); newOpt.value = '__new'; newOpt.textContent = '--- Thêm size mới ---'; sizeSelect.appendChild(newOpt);
+  sizes.forEach(s=> { const o=document.createElement('option'); o.value=s; o.textContent=s; sizeSelect.appendChild(o); });
+  const newOpt = document.createElement('option'); newOpt.value='__new'; newOpt.textContent='--- Thêm size mới ---'; sizeSelect.appendChild(newOpt);
   const newSizeInput = document.createElement('input'); newSizeInput.placeholder='Nhập size mới nếu chọn'; newSizeInput.style.display='none'; newSizeInput.style.marginLeft='8px';
+  sizeSelect.onchange = ()=>{ newSizeInput.style.display = sizeSelect.value === '__new' ? 'inline-block':'none'; };
 
-  sizeSelect.onchange = ()=>{ if (sizeSelect.value === '__new') newSizeInput.style.display='inline-block'; else newSizeInput.style.display='none'; };
-
-  const codeLabel = document.createElement('label'); codeLabel.textContent = 'Barcode: ';
-  const codeInput = document.createElement('input'); codeInput.type='text'; codeInput.placeholder='146888';
-
-  const thumbLabel = document.createElement('label'); thumbLabel.textContent = 'Thumbnail (1 file):';
+  const codeInput = document.createElement('input'); codeInput.type='text'; codeInput.placeholder='Barcode (146888)';
   const thumbInput = document.createElement('input'); thumbInput.type='file'; thumbInput.accept='image/*';
+  const detailInput = document.createElement('input'); detailInput.type='file'; detailInput.accept='image/*'; detailInput.multiple = true;
+  const overwriteChkLabel = document.createElement('label'); overwriteChkLabel.innerHTML = '<input id="overwriteAdd" type="checkbox"> Ghi đè nếu tồn tại';
 
-  const detailsLabel = document.createElement('label'); detailsLabel.textContent = 'Detail images (multiple):';
-  const detailsInput = document.createElement('input'); detailsInput.type='file'; detailsInput.accept='image/*'; detailsInput.multiple = true;
+  const btnPreview = document.createElement('button'); btnPreview.className='btn'; btnPreview.textContent='Xem ảnh';
+  const btnSave = document.createElement('button'); btnSave.className='btn'; btnSave.textContent='Upload';
 
-  const checkOverwriteLabel = document.createElement('label'); checkOverwriteLabel.innerHTML = '<input id="overwriteChoice" type="checkbox"> Ghi đè nếu barcode đã tồn tại (nếu không sẽ hỏi)';
-
-  const actions = document.createElement('div'); actions.style.marginTop='8px';
-  const saveBtn = document.createElement('button'); saveBtn.className='btn'; saveBtn.textContent='Lưu / Upload';
-  const previewBtn = document.createElement('button'); previewBtn.className='btn'; previewBtn.style.marginLeft='8px'; previewBtn.textContent='Xem ảnh đã chọn';
-  actions.appendChild(saveBtn); actions.appendChild(previewBtn);
-
-  box.appendChild(sizeLabel); box.appendChild(sizeSelect); box.appendChild(newSizeInput);
-  box.appendChild(document.createElement('br'));
-  box.appendChild(codeLabel); box.appendChild(codeInput);
-  box.appendChild(document.createElement('br'));
-  box.appendChild(thumbLabel); box.appendChild(thumbInput);
-  box.appendChild(document.createElement('br'));
-  box.appendChild(detailsLabel); box.appendChild(detailsInput);
-  box.appendChild(document.createElement('br'));
-  box.appendChild(checkOverwriteLabel);
-  box.appendChild(actions);
-  contentEl.appendChild(box);
-
-  previewBtn.onclick = ()=> {
-    const files = Array.from(detailsInput.files || []);
+  btnPreview.onclick = ()=> {
+    const details = Array.from(detailInput.files || []);
     const t = thumbInput.files && thumbInput.files[0];
     const div = document.createElement('div');
     if (t) { const im = document.createElement('img'); im.src = URL.createObjectURL(t); im.style.maxWidth='160px'; div.appendChild(im); }
-    files.forEach(f=>{ const im = document.createElement('img'); im.src = URL.createObjectURL(f); im.style.maxWidth='120px'; im.style.margin='6px'; div.appendChild(im);});
-    modalTitle.textContent = 'Preview ảnh sẽ upload';
+    details.forEach(f=> { const im=document.createElement('img'); im.src=URL.createObjectURL(f); im.style.maxWidth='120px'; im.style.margin='6px'; div.appendChild(im);});
+    modalTitle.textContent = 'Preview ảnh';
     modalBody.innerHTML = ''; modalBody.appendChild(div); modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
   };
 
-  saveBtn.onclick = async ()=> {
-    const sizeVal = sizeSelect.value === '__new' ? (newSizeInput.value || '').trim() : sizeSelect.value;
-    const barcodeVal = (codeInput.value || '').trim();
+  btnSave.onclick = async ()=> {
+    const sizeVal = sizeSelect.value === '__new' ? (newSizeInput.value||'').trim() : sizeSelect.value;
+    const barcodeVal = (codeInput.value||'').trim();
     if (!sizeVal) return alert('Chọn hoặc nhập size');
     if (!barcodeVal) return alert('Nhập barcode');
-    const thumbFile = thumbInput.files && thumbInput.files[0];
-    const detailFiles = Array.from(detailsInput.files || []);
-    if (detailFiles.length === 0) return alert('Chọn ít nhất 1 ảnh detail');
+    const details = Array.from(detailInput.files || []);
+    if (details.length === 0) return alert('Chọn ít nhất 1 ảnh detail');
 
-    // check if barcode exists
-    const exists = manifest.sizes.some(s => String(s.size) === String(sizeVal) && s.barcodes.some(b => String(b.code) === String(barcodeVal)));
-    if (exists && !document.getElementById('overwriteChoice').checked) {
-      // show preview of existing and new and ask user
-      const existing = manifest.sizes.find(s => String(s.size) === String(sizeVal)).barcodes.find(b => String(b.code) === String(barcodeVal));
-      let html = `<div><strong>Barcode tồn tại:</strong> ${barcodeVal} (Size ${sizeVal})</div><div style="margin-top:8px"><strong>Ảnh hiện có:</strong></div>`;
-      existing.images.forEach(fn => { html += `<div>${fn}</div>`; });
-      html += `<div style="margin-top:8px"><strong>Ảnh mới sẽ upload:</strong></div>`;
-      detailFiles.forEach(f=> html += `<div>${f.name}</div>`);
-      html += `<div style="margin-top:12px"><button id="doSkip" class="btn">Skip (không upload)</button><button id="doOverwrite" class="btn" style="margin-left:8px">Overwrite (ghi đè)</button></div>`;
-      modalTitle.textContent = 'Barcode đã tồn tại';
-      modalBody.innerHTML = html;
-      modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
-      document.getElementById('doSkip').onclick = ()=> { modalClose.click(); alert('Skip upload'); };
-      document.getElementById('doOverwrite').onclick = async ()=> {
-        modalClose.click();
-        await performUpload(sizeVal, barcodeVal, thumbFile, detailFiles, true);
-      };
-      return;
-    }
+    const overwrite = document.getElementById('overwriteAdd').checked;
+    const adminKey = getAdminKey();
+    if (!adminKey) { alert('Vui lòng Set Admin Key trước khi upload'); return; }
 
-    // otherwise upload directly (if checked overwriteChoice true, treat as overwrite)
-    await performUpload(sizeVal, barcodeVal, thumbFile, detailFiles, Boolean(document.getElementById('overwriteChoice').checked));
-  };
-}
-
-async function performUpload(size, barcode, thumbFile, detailFiles, overwrite) {
-  try {
-    const adminKey = prompt('Nhập ADMIN_KEY để upload (cancel => hủy)');
-    if (!adminKey) return;
-    // if overwrite: soft-delete existing into trash first (preserve previous)
+    // if overwrite true => do soft-delete previous first
     if (overwrite) {
-      await fetch(WORKER_BASE + '/soft-delete', {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json', 'x-api-key': adminKey },
-        body: JSON.stringify({ size, barcode })
-      });
+      await fetch(WORKER_BASE + '/soft-delete', { method:'POST', headers:{ 'Content-Type':'application/json', 'x-api-key': adminKey }, body: JSON.stringify({ size: sizeVal, barcode: barcodeVal }) });
     }
 
-    // build form
     const fd = new FormData();
-    fd.append('size', size);
-    fd.append('barcode', barcode);
-    if (thumbFile) fd.append('thumb', thumbFile, thumbFile.name);
-    for (let i=0;i<detailFiles.length;i++){
-      fd.append('file' + i, detailFiles[i], detailFiles[i].name);
-    }
+    fd.append('size', sizeVal);
+    fd.append('barcode', barcodeVal);
+    const t = thumbInput.files && thumbInput.files[0]; if (t) fd.append('thumb', t, t.name);
+    for (let i=0;i<details.length;i++) fd.append('file'+i, details[i], details[i].name);
 
-    const r = await fetch(WORKER_BASE + '/upload', { method: 'POST', headers: { 'x-api-key': adminKey }, body: fd });
-    if (!r.ok) throw new Error('Upload failed: ' + r.status);
+    const r = await fetch(WORKER_BASE + '/upload', { method:'POST', headers: { 'x-api-key': adminKey }, body: fd });
+    if (!r.ok) { const ttxt = await r.text().catch(()=>r.statusText); throw new Error('Upload failed: ' + ttxt); }
     await fetchManifestAndTrash();
-    alert('Upload thành công: ' + barcode);
-  } catch (err) {
-    console.error(err); alert('Upload error: ' + err.message);
-  }
+    alert('Upload xong: ' + barcodeVal);
+  };
+
+  const wrap = document.createElement('div');
+  wrap.appendChild(document.createTextNode('Size: ')); wrap.appendChild(sizeSelect); wrap.appendChild(newSizeInput);
+  wrap.appendChild(document.createElement('br'));
+  wrap.appendChild(document.createTextNode('Barcode: ')); wrap.appendChild(codeInput);
+  wrap.appendChild(document.createElement('br'));
+  wrap.appendChild(document.createTextNode('Thumbnail: ')); wrap.appendChild(thumbInput);
+  wrap.appendChild(document.createElement('br'));
+  wrap.appendChild(document.createTextNode('Detail images: ')); wrap.appendChild(detailInput);
+  wrap.appendChild(document.createElement('br'));
+  wrap.appendChild(overwriteChkLabel);
+  wrap.appendChild(document.createElement('br'));
+  wrap.appendChild(btnPreview); wrap.appendChild(btnSave);
+
+  box.appendChild(wrap); contentEl.appendChild(box);
 }
 
-/* ------- SEARCH handler ------- */
+/* ----- SEARCH ----- */
 searchInput.addEventListener('keydown', (e)=>{ if (e.key === 'Enter') doSearch(); });
 function doSearch(){
   const q = (searchInput.value||'').trim().toLowerCase();
   if (!q) { alert('Nhập barcode để tìm'); return; }
-  // find matching barcode(s)
   const matches = [];
   for (const s of manifest.sizes) {
     for (const b of s.barcodes) {
@@ -486,20 +481,14 @@ function doSearch(){
     }
   }
   if (matches.length === 0) { alert('Không tìm thấy'); return; }
-  // show results in modal list
   let html = `<div>Found ${matches.length} kết quả</div>`;
-  matches.forEach(m => {
-    const origCount = (m.barcode.images||[]).length;
-    html += `<div style="margin-top:8px"><strong>${m.barcode.code}</strong> — Size ${m.size} — ${origCount} ảnh <button class="btn" data-size="${m.size}" data-code="${m.barcode.code}">Xem</button></div>`;
-  });
+  matches.forEach(m => { html += `<div style="margin-top:8px"><strong>${m.barcode.code}</strong> — Size ${m.size} <button class="btn" data-size="${m.size}" data-code="${m.barcode.code}">Xem</button></div>`; });
   modalTitle.textContent = 'Kết quả tìm kiếm';
-  modalBody.innerHTML = html;
-  modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
-  modalBody.querySelectorAll('button[data-size]').forEach(btn => btn.onclick = (ev) => {
+  modalBody.innerHTML = html; modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
+  modalBody.querySelectorAll('button[data-size]').forEach(btn=>btn.onclick = (ev)=> {
     const s = ev.target.dataset.size; const c = ev.target.dataset.code;
     modalClose.click();
-    // switch to size tab and scroll to card
-    activeTab = 'size:' + s; setActiveTab(); renderSize(s);
+    activeTab = 'size:' + s; setActiveButton(); renderSize(s);
     setTimeout(()=> {
       const cards = Array.from(document.querySelectorAll('.card'));
       const card = cards.find(cd => cd.textContent.includes(c));
@@ -508,10 +497,30 @@ function doSearch(){
   });
 }
 
-/* ------- refresh button ------- */
-document.getElementById('refreshBtn').onclick = async ()=> { await fetchManifestAndTrash(); alert('Manifest refreshed'); };
+/* ----- Set Admin Key UI ----- */
+setKeyBtn.onclick = ()=> {
+  const curr = getAdminKey() || '';
+  const v = prompt('Nhập ADMIN_KEY (sẽ lưu trong localStorage trên trình duyệt):', curr);
+  if (v === null) return;
+  setAdminKey(v.trim());
+  alert(v ? 'Đã lưu Admin Key cục bộ' : 'Đã xóa Admin Key');
+};
 
-/* ------- init ------- */
+/* ----- Refresh manifest (calls POST /refresh-manifest with admin key) ----- */
+refreshBtn.onclick = async ()=> {
+  const key = getAdminKey();
+  if (!key) { alert('Vui lòng Set Admin Key trước khi refresh'); return; }
+  try {
+    const r = await fetch(WORKER_BASE + '/refresh-manifest', { method:'POST', headers: { 'x-api-key': key }});
+    if (!r.ok) { const t = await r.text().catch(()=>r.statusText); throw new Error('Refresh failed: ' + t); }
+    await fetchManifestAndTrash();
+    alert('Manifest đã rebuild và tải lại');
+  } catch (err) {
+    console.error(err); alert('Refresh error: ' + err.message);
+  }
+};
+
+/* ----- initialization ----- */
 async function init() {
   await fetchManifestAndTrash();
 }
