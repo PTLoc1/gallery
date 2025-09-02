@@ -5,16 +5,24 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Gallery — Shoes</title>
   <style>
-    :root{--accent:#0b6}
-    body{font-family:system-ui,Arial;margin:0;background:#f5f7fb;color:#0b1220}
-    header{background:#fff;padding:12px 16px;box-shadow:0 2px 6px rgba(10,10,10,0.06);position:sticky;top:0;z-index:20}
-    .tabs{display:flex;gap:8px;overflow:auto;padding:8px}
-    .tab{padding:8px 12px;border-radius:8px;background:#e6eef7;border:1px solid #d3e0f3;cursor:pointer;white-space:nowrap}
+    :root{
+      --accent:#2b82c9; /* blue-ish accent */
+      --header-bg:#e6f3ff; /* light navy-blue */
+    }
+    body{font-family:system-ui,Arial;margin:0;background:#f0f6fb;color:#082033}
+    header{background:var(--header-bg);padding:12px 16px;box-shadow:0 2px 6px rgba(10,10,10,0.06);position:sticky;top:0;z-index:30}
+    .top-row{display:flex;gap:12px;align-items:center;justify-content:space-between}
+    .brand{font-weight:700;color:var(--accent)}
+    .search-wrap{flex:1;margin-left:12px}
+    .search-input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);font-size:14px}
+    .tabs{display:flex;gap:8px;overflow:auto;padding:8px;margin-top:8px}
+    .tab{padding:8px 12px;border-radius:8px;background:#eaf6ff;border:1px solid #d6ecff;cursor:pointer;white-space:nowrap}
     .tab.active{background:var(--accent);color:white}
     main{padding:12px}
-    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px} /* smaller cards */
+    .status{padding:8px 12px;color:#345}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
     .card{background:white;border-radius:8px;padding:8px;box-shadow:0 1px 4px rgba(12,15,30,0.06);text-align:center;display:flex;flex-direction:column;gap:8px;font-size:13px}
-    .card img{width:100%;height:110px;object-fit:cover;border-radius:6px;cursor:pointer} /* smaller thumb */
+    .card img{width:100%;height:110px;object-fit:cover;border-radius:6px;cursor:pointer}
     .barcode-row{display:flex;justify-content:space-between;align-items:center;gap:6px}
     .btn{padding:6px 8px;border-radius:6px;border:1px solid #cbd5e1;background:transparent;cursor:pointer;font-size:13px}
     .modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;z-index:50;align-items:center;justify-content:center}
@@ -25,23 +33,34 @@
     .two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px}
     .two-col img{width:100%;height:auto;border-radius:6px;display:block}
     @media(max-width:700px){.two-col{grid-template-columns:1fr}}
-    #status{padding:8px 16px;color:#555}
+    .search-results{margin-top:12px}
+    .search-item{background:#fff;padding:8px;border-radius:8px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+    .search-thumb{width:70px;height:60px;object-fit:cover;border-radius:6px}
   </style>
 </head>
 <body>
   <header>
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-      <div style="display:flex;flex-direction:column">
-        <strong>Gallery giày</strong>
-        <small>Tabs theo Size — bấm ảnh để xem chi tiết</small>
+    <div class="top-row">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="brand">Shoes Gallery</div>
+        <div style="font-size:13px;color:#0b4d74">(Browse & Save)</div>
       </div>
-      <div><button id="refreshBtn" class="btn">Refresh</button></div>
+
+      <div class="search-wrap">
+        <input id="searchInput" class="search-input" placeholder="Tìm theo barcode (VD: 146888) — Enter để tìm" />
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center">
+        <button id="refreshBtn" class="btn">Refresh</button>
+      </div>
     </div>
-    <div class="tabs" id="tabs"></div>
+
+    <div id="tabs" class="tabs" style="margin-top:8px;"></div>
   </header>
 
   <main>
-    <div id="status">Đang tải manifest...</div>
+    <div id="status" class="status">Đang tải manifest...</div>
+    <div id="searchResults" class="search-results" aria-live="polite"></div>
     <div id="content"></div>
   </main>
 
@@ -55,25 +74,23 @@
           <button id="closeModal" class="btn">Đóng</button>
         </div>
       </div>
-      <div class="modal-body">
-        <div id="modalGrid" class="two-col"></div>
-      </div>
+      <div class="modal-body"><div id="modalGrid" class="two-col"></div></div>
     </div>
   </div>
 
-  <!-- libs -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
 <script>
-/* ========== CONFIG ========== */
-const WORKER_BASE = "https://shoes-worker.lapproak0.workers.dev"; // your worker
-const PREFIX = "Shoes"; // must match case-sensitive folder in R2
-/* ============================ */
+/* CONFIG */
+const WORKER_BASE = "https://shoes-worker.lapproak0.workers.dev";
+const PREFIX = "Shoes";
 
 const statusEl = document.getElementById('status');
 const tabsEl = document.getElementById('tabs');
 const contentEl = document.getElementById('content');
+const searchEl = document.getElementById('searchInput');
+const searchResultsEl = document.getElementById('searchResults');
 const modal = document.getElementById('modal');
 const modalGrid = document.getElementById('modalGrid');
 const modalTitle = document.getElementById('modalTitle');
@@ -83,7 +100,6 @@ const downloadModalBtn = document.getElementById('downloadModal');
 function logStatus(msg){ statusEl.textContent = msg; console.log(msg); }
 
 function normalizeManifest(raw) {
-  console.log("RAW manifest:", raw);
   if (!raw) return { sizes: [] };
   if (Array.isArray(raw)) return { sizes: raw };
   if (raw.sizes && Array.isArray(raw.sizes)) {
@@ -116,7 +132,7 @@ function normalizeManifest(raw) {
   return { sizes: [] };
 }
 
-/* ------------- manifest/load/render ------------- */
+/* LOAD & RENDER */
 let manifest = null;
 async function loadManifest(){
   try {
@@ -127,6 +143,7 @@ async function loadManifest(){
     manifest = normalizeManifest(raw);
     logStatus('Manifest loaded — sizes: ' + (manifest.sizes ? manifest.sizes.length : 0));
     renderTabs();
+    renderSearchResults(''); // clear search
   } catch (err) {
     console.error('Load manifest failed', err);
     statusEl.innerHTML = `<span style="color:#b00">Không load được manifest: ${err.message}</span>`;
@@ -169,18 +186,25 @@ function renderSize(sizeObj){
     row.appendChild(codeEl);
 
     const actions = document.createElement('div');
-    // Download ZIP (Windows)
+    // Download ZIP
     const dl = document.createElement('button'); dl.className='btn'; dl.textContent='Tải Zip';
     dl.onclick = ()=>downloadBarcode(sizeObj.size, bc);
     actions.appendChild(dl);
 
-    // Save to Photos (iPhone / Share)
+    // Save/share (smart)
     const saveBtn = document.createElement('button'); saveBtn.className='btn';
-    saveBtn.textContent = isIOS() ? 'Lưu vào Photos' : 'Lưu/Share';
-    saveBtn.onclick = ()=>shareMultipleImages(sizeObj.size, bc);
+    // show "Save images" on devices that can share files; otherwise "Tải Zip"
+    if (navigator.canShare && typeof File !== 'undefined') {
+      // lightweight check — will still fallback inside function if not available
+      saveBtn.textContent = isIOS() ? 'Lưu vào Photos' : 'Lưu/Share';
+      saveBtn.onclick = ()=>shareMultipleImages(sizeObj.size, bc);
+    } else {
+      saveBtn.textContent = 'Tải Zip';
+      saveBtn.onclick = ()=>downloadBarcode(sizeObj.size, bc);
+    }
     actions.appendChild(saveBtn);
 
-    // Copy images (optional direct clipboard)
+    // Copy images (attempt)
     const copyImgsBtn = document.createElement('button'); copyImgsBtn.className='btn'; copyImgsBtn.textContent='Copy ảnh';
     copyImgsBtn.onclick = ()=>copyImages(sizeObj.size, bc);
     actions.appendChild(copyImgsBtn);
@@ -193,12 +217,59 @@ function renderSize(sizeObj){
   contentEl.appendChild(grid);
 }
 
-/* ------------- modal minimal ------------- */
+/* SEARCH */
+function renderSearchResults(query){
+  searchResultsEl.innerHTML = '';
+  const q = (query||'').trim();
+  if (!q) return;
+  const lower = q.toLowerCase();
+  const matches = [];
+  (manifest.sizes||[]).forEach(s => {
+    (s.barcodes||[]).forEach(b => {
+      if (String(b.code).toLowerCase().includes(lower)) matches.push({ size: s.size, barcode: b });
+    });
+  });
+  if (matches.length === 0) {
+    searchResultsEl.innerHTML = `<div style="color:#666">Không tìm thấy barcode "${q}"</div>`;
+    return;
+  }
+  // render matches
+  for (const m of matches) {
+    const el = document.createElement('div'); el.className='search-item';
+    const thumb = m.barcode.images && m.barcode.images[0] ? `${WORKER_BASE}/${PREFIX}/${encodeURIComponent(m.size)}/${encodeURIComponent(m.barcode.code)}/${encodeURIComponent(m.barcode.images[0])}` : '';
+    const im = document.createElement('img'); im.src = thumb; im.className='search-thumb'; im.onerror=()=>{im.style.opacity=0.6};
+    const info = document.createElement('div'); info.style.flex='1';
+    info.innerHTML = `<div><strong>${m.barcode.code}</strong> — Size ${m.size}</div><div style="font-size:12px;color:#666">Có ${ (m.barcode.images || []).length } ảnh</div>`;
+    const actions = document.createElement('div');
+    const viewBtn = document.createElement('button'); viewBtn.className='btn'; viewBtn.textContent='Xem';
+    viewBtn.onclick = ()=>{ renderTabs(); // ensure tabs exist
+      // find and activate the size tab
+      const tabBtns = Array.from(document.querySelectorAll('.tab'));
+      const t = tabBtns.find(b=>b.textContent === String(m.size));
+      if (t) { t.click(); }
+      // scroll to card
+      setTimeout(()=> {
+        // try to find card with barcode text
+        const cards = Array.from(document.querySelectorAll('.card'));
+        const card = cards.find(c => c.textContent.includes(String(m.barcode.code)));
+        if (card) card.scrollIntoView({behavior:'smooth', block:'center'});
+      }, 200);
+    };
+    const saveBtn = document.createElement('button'); saveBtn.className='btn'; saveBtn.textContent='Lưu';
+    saveBtn.onclick = ()=>shareMultipleImages(m.size, m.barcode);
+    actions.appendChild(viewBtn); actions.appendChild(saveBtn);
+
+    el.appendChild(im); el.appendChild(info); el.appendChild(actions);
+    searchResultsEl.appendChild(el);
+  }
+}
+
+/* MODAL (minimal) */
 function openModal(size, barcode) {
   modalTitle.textContent = `Size ${size} — ${barcode.code}`;
   modalGrid.innerHTML = '';
   const imgs = barcode.images.map(fname => `${WORKER_BASE}/${PREFIX}/${encodeURIComponent(size)}/${encodeURIComponent(barcode.code)}/${encodeURIComponent(fname)}`);
-  imgs.forEach(src=>{
+  imgs.forEach(src => {
     const w = document.createElement('div');
     const im = document.createElement('img'); im.src = src;
     w.appendChild(im);
@@ -208,267 +279,91 @@ function openModal(size, barcode) {
   modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
 }
 closeModalBtn.onclick = ()=>{ modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); }
-modal.onclick = (e)=>{ if(e.target===modal) closeModalBtn.click(); }
+modal.onclick = e => { if (e.target === modal) closeModalBtn.click(); }
 
-/* ------------- download ZIP (Windows) ------------- */
+/* DOWNLOAD ZIP */
 async function downloadBarcode(size, barcode){
   try{
     const zip = new JSZip();
     const folder = zip.folder(`${size}_${barcode.code}`);
     for(const fname of barcode.images){
       const url = `${WORKER_BASE}/${PREFIX}/${encodeURIComponent(size)}/${encodeURIComponent(barcode.code)}/${encodeURIComponent(fname)}`;
-      try{
-        const res = await (url);
-        if(!res.ok){ console.warn(' failed', url); continue; }
-        const blob = await res.blob();
-        folder.file(fname, blob);
-      }catch(err){ console.warn(' err', err); }
+      try{ const res = await fetch(url); if(!res.ok){ console.warn('fetch failed', url); continue;} const blob = await res.blob(); folder.file(fname, blob); } catch(e){ console.warn(e); }
     }
     const blob = await zip.generateAsync({type:'blob'});
     saveAs(blob, `${size}_${barcode.code}.zip`);
-  }catch(err){
-    alert('Lỗi tạo zip: '+err.message);
-  }
+  }catch(err){ alert('Lỗi tạo zip: ' + err.message); }
 }
 
-/* ------------- utilities for images/clipboard/share ------------- */
-function isIOS(){
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-}
+/* IMAGES / SHARE / CLIPBOARD HELPERS */
+function isIOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream; }
 
-async function fetchImageBitmap(url){
-  const r = await fetch(url, { mode:'cors' });
-  if (!r.ok) throw new Error('Fetch failed ' + r.status + ' ' + url);
-  const blob = await r.blob();
-  const bitmap = await createImageBitmap(blob);
-  return { blob, bitmap };
-}
-
-// Try copy multiple images directly, fallback to merged image
-async function copyImages(size, barcode){
-  try{
-    const urls = barcode.images.map(f => `${WORKER_BASE}/${PREFIX}/${encodeURIComponent(size)}/${encodeURIComponent(barcode.code)}/${encodeURIComponent(f)}`);
-    const blobs = [];
-    for(const u of urls){
-      const { blob } = await fetchImageBitmap(u);
-      blobs.push(blob);
-    }
-    // try writing multiple files to clipboard
-    try{
-      const items = blobs.map(b => new ClipboardItem({ [b.type]: b }));
-      await navigator.clipboard.write(items);
-      alert('Đã copy ảnh vào clipboard. Hãy dán (Ctrl+V) vào app hỗ trợ.');
-      return;
-    }catch(e){
-      console.warn('Direct clipboard write failed', e);
-    }
-    // fallback: merge and try to copy/share or download
-    await mergeImagesAndCopy(size, barcode, urls);
-  }catch(err){
-    console.error('copyImages error', err);
-    if (confirm('Không thể copy ảnh trực tiếp. Muốn tải ZIP thay thế?')) downloadBarcode(size, barcode);
-  }
-}
-
-// Merge images into single PNG, try to copy or download
-async function mergeImagesAndCopy(size, barcode, urls){
-  try{
-    // load bitmaps
-    const bitmaps = [];
-    for(const u of urls){
-      const { bitmap } = await fetchImageBitmap(u);
-      bitmaps.push(bitmap);
-    }
-
-    const gap = 8;
-    // compute column widths/heights
-    const colHeights = [0,0];
-    const colMaxW = [0,0];
-    for(let i=0;i<bitmaps.length;i++){
-      const col = i % 2;
-      colMaxW[col] = Math.max(colMaxW[col], bitmaps[i].width);
-      colHeights[col] += bitmaps[i].height + gap;
-    }
-    const maxColWidth = 900;
-    const scale0 = colMaxW[0] ? Math.min(1, maxColWidth / colMaxW[0]) : 1;
-    const scale1 = colMaxW[1] ? Math.min(1, maxColWidth / colMaxW[1]) : 1;
-    const colW = Math.round(Math.max(colMaxW[0]*scale0, colMaxW[1]*scale1));
-    const canvasW = colW*2 + gap;
-    const canvasH = Math.round(Math.max(colHeights[0]*scale0, colHeights[1]*scale1));
-
-    // create canvas (use OffscreenCanvas if available)
-    let canvas, ctx;
-    if (typeof OffscreenCanvas !== 'undefined') {
-      canvas = new OffscreenCanvas(canvasW, canvasH);
-      ctx = canvas.getContext('2d');
-    } else {
-      canvas = document.createElement('canvas');
-      canvas.width = canvasW;
-      canvas.height = canvasH;
-      ctx = canvas.getContext('2d');
-    }
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0,0,canvasW,canvasH);
-
-    const y = [0,0];
-    for(let i=0;i<bitmaps.length;i++){
-      const bm = bitmaps[i];
-      const col = i % 2;
-      const scale = col === 0 ? scale0 : scale1;
-      const drawW = Math.round(bm.width * scale);
-      const drawH = Math.round(bm.height * scale);
-      const x = col === 0 ? 0 : colW + gap;
-      ctx.drawImage(bm, 0, 0, bm.width, bm.height, x, y[col], drawW, drawH);
-      y[col] += drawH + gap;
-    }
-
-    // export blob
-    let blob;
-    if (canvas instanceof OffscreenCanvas) {
-      blob = await canvas.convertToBlob({ type: 'image/png', quality: 0.92 });
-    } else {
-      blob = await new Promise(res => canvas.toBlob(res, 'image/png', 0.92));
-    }
-
-    const fileName = `${size}_${barcode.code}_merged.png`;
-    const file = new File([blob], fileName, { type: blob.type });
-
-    // try Web Share API with files (iOS 16.4+ / some Android)
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: 'Photos - ' + barcode.code });
-        return;
-      } catch(e) {
-        console.warn('share failed', e);
-      }
-    }
-
-    // fallback: try clipboard write for merged image
-    try {
-      await navigator.clipboard.write([ new ClipboardItem({ [blob.type]: blob }) ]);
-      alert('Đã copy ảnh ghép vào clipboard (paste vào app hỗ trợ).');
-      return;
-    } catch(e) {
-      console.warn('copy merged image to clipboard failed', e);
-    }
-
-    // final fallback: open blob in new tab for manual save
-    const blobUrl = URL.createObjectURL(blob);
-    const newWin = window.open(blobUrl, '_blank');
-    if (!newWin) {
-      const a = document.createElement('a'); a.href = blobUrl; a.target = '_blank'; document.body.appendChild(a); a.click(); a.remove();
-    }
-    setTimeout(()=>URL.revokeObjectURL(blobUrl), 60_000);
-
-  }catch(err){
-    console.error('mergeImagesAndCopy error', err);
-    alert('Không thể gộp/copy ảnh: ' + err.message);
-  }
-}
-// Share multiple images (best on iOS 16.4+ Safari / Chrome Android)
-async function shareMultipleImages(size, barcode) {
+async function shareMultipleImages(size, barcode){
   try {
-    // build URLs (ensure encode)
     const urls = barcode.images.map(f => `${WORKER_BASE}/${PREFIX}/${encodeURIComponent(size)}/${encodeURIComponent(barcode.code)}/${encodeURIComponent(f)}`);
-    // fetch blobs
     const files = [];
     for (const u of urls) {
       const r = await fetch(u, { mode: 'cors' });
-      if (!r.ok) throw new Error('Fetch failed ' + r.status + ' ' + u);
+      if (!r.ok) throw new Error('Fetch failed ' + r.status);
       const blob = await r.blob();
-      // create File with original filename
       const fname = decodeURIComponent(u.split('/').pop());
       files.push(new File([blob], fname, { type: blob.type }));
     }
 
-    // check if browser supports sharing files
     if (navigator.canShare && navigator.canShare({ files })) {
       await navigator.share({ files, title: 'Images ' + barcode.code });
-      // User will see Share Sheet (can Save Images)
       return;
     } else {
-      // fallback: ask user to download zip (Files app flow)
-      if (confirm('Trình duyệt không hỗ trợ chia sẻ nhiều file trực tiếp. Muốn tải ZIP thay thế (mở bằng Files → Save Images)?')) {
-        await downloadBarcode(size, barcode); // uses existing zip download
+      // fallback: try copy to clipboard or download zip
+      if (confirm('Không hỗ trợ share đa file trên trình duyệt/người dùng. Muốn tải ZIP thay thế?')) {
+        await downloadBarcode(size, barcode);
       } else {
-        alert('Không có cách khác: thử mở trang trong Safari (iOS 16.4+) hoặc dùng tải ZIP.');
+        alert('Trên iPhone: thử mở trang trong Safari (iOS 16.4+) để dùng tính năng Save Images.');
       }
     }
   } catch (err) {
-    console.error('shareMultipleImages error', err);
-    alert('Không thể share ảnh: ' + err.message + '\nSẽ fallback sang tải ZIP.');
+    console.error('shareMultipleImages:', err);
+    alert('Không thể share ảnh: ' + err.message + '\nSẽ fallback sang ZIP.');
     await downloadBarcode(size, barcode);
   }
 }
 
-/* ------------- Save to Photos flow (iPhone friendly) ------------- */
-async function saveImagesToPhotos(size, barcode){
-  try{
-    // build urls
+// Try to copy image blobs into clipboard (may or may not be accepted by target app)
+async function copyImages(size, barcode){
+  try {
     const urls = barcode.images.map(f => `${WORKER_BASE}/${PREFIX}/${encodeURIComponent(size)}/${encodeURIComponent(barcode.code)}/${encodeURIComponent(f)}`);
-    // load bitmaps
-    const bitmaps = [];
+    const blobs = [];
     for (const u of urls) {
-      const { bitmap } = await fetchImageBitmap(u);
-      bitmaps.push(bitmap);
+      const r = await fetch(u, { mode: 'cors' });
+      if (!r.ok) throw new Error('Fetch failed ' + r.status);
+      blobs.push(await r.blob());
     }
-    // merge into canvas
-    const gap = 8;
-    const colHeights = [0,0];
-    const colMaxW = [0,0];
-    for(let i=0;i<bitmaps.length;i++){
-      const col = i%2; colMaxW[col] = Math.max(colMaxW[col], bitmaps[i].width); colHeights[col] += bitmaps[i].height + gap;
-    }
-    const maxColWidth = 900;
-    const scale0 = colMaxW[0] ? Math.min(1, maxColWidth / colMaxW[0]) : 1;
-    const scale1 = colMaxW[1] ? Math.min(1, maxColWidth / colMaxW[1]) : 1;
-    const colW = Math.round(Math.max(colMaxW[0]*scale0, colMaxW[1]*scale1));
-    const canvasW = colW*2 + gap;
-    const canvasH = Math.round(Math.max(colHeights[0]*scale0, colHeights[1]*scale1));
-    // create canvas
-    const canvas = document.createElement('canvas'); canvas.width = canvasW; canvas.height = canvasH;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvasW,canvasH);
-    const y = [0,0];
-    for(let i=0;i<bitmaps.length;i++){
-      const bm = bitmaps[i]; const col = i%2; const scale = col===0?scale0:scale1;
-      const drawW = Math.round(bm.width*scale); const drawH = Math.round(bm.height*scale);
-      const x = col===0 ? 0 : colW + gap;
-      ctx.drawImage(bm, 0,0,bm.width,bm.height, x, y[col], drawW, drawH);
-      y[col] += drawH + gap;
-    }
-    // to blob
-    const blob = await new Promise(res => canvas.toBlob(res, 'image/png', 0.92));
-    const file = new File([blob], `${size}_${barcode.code}_photos.png`, { type: blob.type });
-
-    // if Web Share API supports files (iOS Safari newer)
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: 'Save images ' + barcode.code });
-        return;
-      } catch(e) {
-        console.warn('Share failed', e);
+    // attempt
+    try {
+      const items = blobs.map(b => new ClipboardItem({ [b.type]: b }));
+      await navigator.clipboard.write(items);
+      alert('Đã copy ảnh vào clipboard. Lưu ý: một số ứng dụng (ví dụ Messenger) không chấp nhận dán ảnh từ clipboard — hãy thử Share hoặc tải ZIP nếu không dán được.');
+      return;
+    } catch (e) {
+      console.warn('clipboard.write images failed', e);
+      // fallback to share
+      if (confirm('Không thể copy ảnh vào clipboard (trình duyệt/ứng dụng hạn chế). Muốn mở Share (Save) thay thế?')) {
+        await shareMultipleImages(size, barcode);
+      } else {
+        await downloadBarcode(size, barcode);
       }
     }
-
-    // fallback: open image in new tab for long-press save
-    const url = URL.createObjectURL(blob);
-    const newWin = window.open(url, '_blank');
-    if (!newWin) {
-      const a = document.createElement('a'); a.href = url; a.target = '_blank'; document.body.appendChild(a); a.click(); a.remove();
-    }
-    setTimeout(()=>URL.revokeObjectURL(url), 60_000);
-
-  } catch(err) {
-    console.error('saveImagesToPhotos:', err);
-    alert('Không thể lưu trực tiếp: ' + err.message + '\nTrên iPhone, thử mở trang trong Safari và bấm Lưu vào Photos (long-press ảnh).');
+  } catch (err) {
+    console.error('copyImages error', err);
+    alert('Không thể copy ảnh: ' + err.message);
   }
 }
 
-/* ------------- init ------------- */
+/* INIT */
 document.getElementById('refreshBtn').onclick = loadManifest;
+searchEl.addEventListener('keydown', (e)=>{ if (e.key === 'Enter') renderSearchResults(searchEl.value); });
+searchEl.addEventListener('input', (e)=>{ if (!searchEl.value) { searchResultsEl.innerHTML=''; } });
 document.addEventListener('DOMContentLoaded', loadManifest);
 </script>
 </body>
 </html>
-
