@@ -177,7 +177,7 @@ function renderSize(sizeObj){
     // Save to Photos (iPhone / Share)
     const saveBtn = document.createElement('button'); saveBtn.className='btn';
     saveBtn.textContent = isIOS() ? 'Lưu vào Photos' : 'Lưu/Share';
-    saveBtn.onclick = ()=>saveImagesToPhotos(sizeObj.size, bc);
+    saveBtn.onclick = ()=>shareMultipleImages(sizeObj.size, bc);
     actions.appendChild(saveBtn);
 
     // Copy images (optional direct clipboard)
@@ -218,11 +218,11 @@ async function downloadBarcode(size, barcode){
     for(const fname of barcode.images){
       const url = `${WORKER_BASE}/${PREFIX}/${encodeURIComponent(size)}/${encodeURIComponent(barcode.code)}/${encodeURIComponent(fname)}`;
       try{
-        const res = await fetch(url);
-        if(!res.ok){ console.warn('fetch failed', url); continue; }
+        const res = await (url);
+        if(!res.ok){ console.warn(' failed', url); continue; }
         const blob = await res.blob();
         folder.file(fname, blob);
-      }catch(err){ console.warn('fetch err', err); }
+      }catch(err){ console.warn(' err', err); }
     }
     const blob = await zip.generateAsync({type:'blob'});
     saveAs(blob, `${size}_${barcode.code}.zip`);
@@ -365,6 +365,41 @@ async function mergeImagesAndCopy(size, barcode, urls){
     alert('Không thể gộp/copy ảnh: ' + err.message);
   }
 }
+// Share multiple images (best on iOS 16.4+ Safari / Chrome Android)
+async function shareMultipleImages(size, barcode) {
+  try {
+    // build URLs (ensure encode)
+    const urls = barcode.images.map(f => `${WORKER_BASE}/${PREFIX}/${encodeURIComponent(size)}/${encodeURIComponent(barcode.code)}/${encodeURIComponent(f)}`);
+    // fetch blobs
+    const files = [];
+    for (const u of urls) {
+      const r = await fetch(u, { mode: 'cors' });
+      if (!r.ok) throw new Error('Fetch failed ' + r.status + ' ' + u);
+      const blob = await r.blob();
+      // create File with original filename
+      const fname = decodeURIComponent(u.split('/').pop());
+      files.push(new File([blob], fname, { type: blob.type }));
+    }
+
+    // check if browser supports sharing files
+    if (navigator.canShare && navigator.canShare({ files })) {
+      await navigator.share({ files, title: 'Images ' + barcode.code });
+      // User will see Share Sheet (can Save Images)
+      return;
+    } else {
+      // fallback: ask user to download zip (Files app flow)
+      if (confirm('Trình duyệt không hỗ trợ chia sẻ nhiều file trực tiếp. Muốn tải ZIP thay thế (mở bằng Files → Save Images)?')) {
+        await downloadBarcode(size, barcode); // uses existing zip download
+      } else {
+        alert('Không có cách khác: thử mở trang trong Safari (iOS 16.4+) hoặc dùng tải ZIP.');
+      }
+    }
+  } catch (err) {
+    console.error('shareMultipleImages error', err);
+    alert('Không thể share ảnh: ' + err.message + '\nSẽ fallback sang tải ZIP.');
+    await downloadBarcode(size, barcode);
+  }
+}
 
 /* ------------- Save to Photos flow (iPhone friendly) ------------- */
 async function saveImagesToPhotos(size, barcode){
@@ -436,3 +471,4 @@ document.addEventListener('DOMContentLoaded', loadManifest);
 </script>
 </body>
 </html>
+
