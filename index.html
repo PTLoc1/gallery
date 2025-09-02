@@ -169,7 +169,8 @@ function renderSize(sizeObj){
   barcodes.forEach(bc => {
     const card = document.createElement('div'); card.className = 'card';
     const thumbName = (Array.isArray(bc.images) && bc.images.find(x=>/thumb/i.test(x))) || (Array.isArray(bc.images) ? bc.images[0] : null) || 'thumb.jpeg';
-    const thumbPath = `${WORKER_BASE}/${PREFIX}/${sizeObj.size}/${bc.code}/${thumbName}`;
+    const thumbPath = `${WORKER_BASE}/${PREFIX}/${encodeURIComponent(sizeObj.size)}/${encodeURIComponent(bc.code)}/${encodeURIComponent(thumbName)}`;
+    //const thumbPath = `${WORKER_BASE}/${PREFIX}/${sizeObj.size}/${bc.code}/${thumbName}`;
     const img = document.createElement('img'); img.src = thumbPath; img.alt = bc.code;
     img.onerror = ()=>{ img.style.opacity=0.6; img.style.objectFit='contain' };
     img.onclick = ()=>openModal(sizeObj.size, bc);
@@ -271,3 +272,4 @@ document.addEventListener('DOMContentLoaded', loadManifest);
 </script>
 </body>
 </html>
+
