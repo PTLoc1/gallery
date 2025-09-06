@@ -13,6 +13,7 @@
 :root{
   --accent:#2b82c9;
   --header-bg:#e6f3ff;
+  --tab-btn-color: #99ceff; /* requested */
   --gap:8px;
   --card-padding-mobile:6px;
   --card-font-mobile:12px;
@@ -95,8 +96,8 @@ main{padding:10px}
 .header-actions { display:flex; gap:8px; align-items:center; }
 .clear-key { font-size:12px; color:#b00; border:none; background:transparent; cursor:pointer; padding:4px; }
 
-/* when a tab is active, make internal buttons blue/white */
-.tab-open .btn{ background:var(--accent); color:#fff; border-color:var(--accent); }
+/* when a tab is active, make internal buttons blue/white (requested color) */
+.tab-open .btn{ background:var(--tab-btn-color); color:#fff; border-color:var(--tab-btn-color); }
 
 /* tablet 4 columns */
 @media (min-width: 600px) and (max-width: 999px) {
@@ -155,6 +156,8 @@ main{padding:10px}
 .table-add th:nth-child(5), .table-add td:nth-child(5) { width:120px; }
 .small-thumb { width:60px; height:60px; object-fit:cover; border-radius:6px; background:#fafafa; display:block; }
 .row-actions { display:flex; gap:6px; align-items:center; }
+.prefill-note{ font-size:12px;color:#3a3a3a;margin-top:6px }
+.controls-left .btn{ margin-right:8px } /* spacing between buttons */
 
 </style>
 </head>
@@ -330,7 +333,7 @@ function createTabButton(text, key){
   };
   return btn;
 }
-function setActiveButton(){ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); const btn = document.querySelector(`.tab[data-key="${activeTab}"]`); if(btn) btn.classList.add('active'); }
+function setActiveButton(){ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); const btn = document.querySelector(`.tab[data-key=\"${activeTab}\"]`); if(btn) btn.classList.add('active'); }
 function buildTabs(){ tabsEl.innerHTML = ''; tabsEl.appendChild(createTabButton('Tất cả','all')); for(const s of manifest.sizes) tabsEl.appendChild(createTabButton(String(s.size), 'size:'+s.size)); const spacer = document.createElement('div'); spacer.style.flex='1'; tabsEl.appendChild(spacer); tabsEl.appendChild(createTabButton('Thêm','add')); tabsEl.appendChild(createTabButton('Chọn để xóa','select-delete')); setActiveButton(); renderAccording(); }
 
 /* header hide: only auto-hide on 'all' and 'size:*' and only when not at top */
@@ -338,7 +341,7 @@ function updateHeaderVisibility(){ const shouldAutoHide = (activeTab==='all' || 
 window.addEventListener('scroll', ()=>{ updateHeaderVisibility(); });
 
 /* utility */
-function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c])); }
 
 /* make card: heading removed 'Size' prefix; modal title shows size value only when open */
 function makeCard(size, bc, withCheckbox=false){
@@ -479,11 +482,21 @@ function renderAdd(){
 
   // controls
   const controls = document.createElement('div'); controls.style.display='flex'; controls.style.justifyContent='space-between'; controls.style.alignItems='center';
-  const left = document.createElement('div');
+  const left = document.createElement('div'); left.className='controls-left';
   const addRowBtn = document.createElement('button'); addRowBtn.className='btn'; addRowBtn.textContent = '+ Thêm dòng';
   left.appendChild(addRowBtn);
   const uploadAllBtn = document.createElement('button'); uploadAllBtn.className='btn'; uploadAllBtn.textContent = 'Upload rows';
   left.appendChild(uploadAllBtn);
+
+  // global action select (apply to all rows)
+  const globalAction = document.createElement('select');
+  const gOpt1 = document.createElement('option'); gOpt1.value='skip'; gOpt1.textContent='Skip if exists (mặc định)';
+  const gOpt2 = document.createElement('option'); gOpt2.value='overwrite'; gOpt2.textContent='Overwrite if exists';
+  const gOpt3 = document.createElement('option'); gOpt3.value='upload'; gOpt3.textContent='Always upload';
+  globalAction.appendChild(gOpt1); globalAction.appendChild(gOpt2); globalAction.appendChild(gOpt3);
+  globalAction.style.marginLeft='10px';
+  left.appendChild(globalAction);
+
   controls.appendChild(left);
 
   const right = document.createElement('div'); right.style.display='flex'; right.style.gap='8px'; right.style.alignItems='center';
@@ -527,9 +540,10 @@ function renderAdd(){
     const tdThumb = document.createElement('td');
     const inputThumb = document.createElement('input'); inputThumb.type='file'; inputThumb.accept='image/*';
     const thumbPreview = document.createElement('img'); thumbPreview.className='small-thumb'; thumbPreview.alt='thumb'; thumbPreview.style.display='none';
-    tdThumb.appendChild(inputThumb); tdThumb.appendChild(thumbPreview);
+    const thumbNote = document.createElement('div'); thumbNote.className='prefill-note'; thumbNote.style.display='none';
+    tdThumb.appendChild(inputThumb); tdThumb.appendChild(thumbPreview); tdThumb.appendChild(thumbNote);
 
-    inputThumb.onchange = (e) => { const f = e.target.files && e.target.files[0]; if(f){ thumbPreview.src = URL.createObjectURL(f); thumbPreview.style.display='block'; } else { thumbPreview.src = ''; thumbPreview.style.display='none'; } };
+    inputThumb.onchange = (e) => { const f = e.target.files && e.target.files[0]; if(f){ thumbPreview.src = URL.createObjectURL(f); thumbPreview.style.display='block'; thumbNote.style.display='none'; tr.__prefilledThumbFile = null; } else { thumbPreview.src = ''; thumbPreview.style.display='none'; } };
 
     // Barcode cell
     const tdBarcode = document.createElement('td');
@@ -546,9 +560,11 @@ function renderAdd(){
     const tdDetails = document.createElement('td');
     const inputDetails = document.createElement('input'); inputDetails.type='file'; inputDetails.accept='image/*'; inputDetails.multiple = true;
     const detailsPreviewWrap = document.createElement('div'); detailsPreviewWrap.style.display='flex'; detailsPreviewWrap.style.gap='6px'; detailsPreviewWrap.style.marginTop='6px';
-    tdDetails.appendChild(inputDetails); tdDetails.appendChild(detailsPreviewWrap);
-    inputDetails.onchange = (e) => { detailsPreviewWrap.innerHTML = ''; const files = Array.from(e.target.files || []); for(const f of files){ const img = document.createElement('img'); img.src = URL.createObjectURL(f); img.className='small-thumb'; detailsPreviewWrap.appendChild(img); } };
-    if(prefill.detailFiles && prefill.detailFiles.length){ for(const f of prefill.detailFiles){ const img = document.createElement('img'); img.src = URL.createObjectURL(f); img.className='small-thumb'; detailsPreviewWrap.appendChild(img); } }
+    const detailsNote = document.createElement('div'); detailsNote.className='prefill-note'; detailsNote.style.display='none';
+    tdDetails.appendChild(inputDetails); tdDetails.appendChild(detailsPreviewWrap); tdDetails.appendChild(detailsNote);
+    inputDetails.onchange = (e) => { detailsPreviewWrap.innerHTML = ''; const files = Array.from(e.target.files || []); for(const f of files){ const img = document.createElement('img'); img.src = URL.createObjectURL(f); img.className='small-thumb'; detailsPreviewWrap.appendChild(img); } tr.__prefilledFiles = null; detailsNote.style.display='none'; };
+
+    if(prefill.detailFiles && prefill.detailFiles.length){ for(const f of prefill.detailFiles){ const img = document.createElement('img'); img.src = URL.createObjectURL(f); img.className='small-thumb'; detailsPreviewWrap.appendChild(img); } detailsNote.textContent = `Prefilled ${prefill.detailFiles.length} file(s)`; detailsNote.style.display='block'; tr.__prefilledFiles = prefill.detailFiles.slice(); }
 
     // Action cell: select skip/overwrite/upload + remove
     const tdAction = document.createElement('td');
@@ -569,15 +585,24 @@ function renderAdd(){
     tr.appendChild(tdThumb); tr.appendChild(tdBarcode); tr.appendChild(tdSize); tr.appendChild(tdDetails); tr.appendChild(tdAction);
     tbody.appendChild(tr);
 
-    // prefill values (including thumb)
-    if(prefill.thumbFile){ thumbPreview.src = URL.createObjectURL(prefill.thumbFile); thumbPreview.style.display='block'; }
-    return { tr, inputThumb, thumbPreview, inputBarcode, sizeSelect, inputDetails, detailsPreviewWrap, actionSelect };
+    // store prefilled thumb if provided
+    if(prefill.thumbFile){ thumbPreview.src = URL.createObjectURL(prefill.thumbFile); thumbPreview.style.display='block'; thumbNote.textContent = 'Prefilled thumb'; thumbNote.style.display='block'; tr.__prefilledThumbFile = prefill.thumbFile; }
+
+    // return useful handles
+    return { tr, inputThumb, thumbPreview, thumbNote, inputBarcode, sizeSelect, inputDetails, detailsPreviewWrap, detailsNote, actionSelect };
   }
 
-  // do NOT add initial row automatically (user asked)
+  // DO NOT add initial row automatically
   // addRow();
 
   addRowBtn.onclick = ()=> addRow();
+
+  // apply global action to all rows
+  globalAction.onchange = ()=>{
+    const val = globalAction.value;
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    for(const r of rows){ const sel = r.querySelector('select'); if(sel) sel.value = val; }
+  };
 
   // preview all: open modal with small gallery from all rows
   previewAllBtn.onclick = ()=>{
@@ -604,12 +629,16 @@ function renderAdd(){
     });
 
     // validate barcodes and details presence
-    for(const ri of rowInfos){ if(!ri.barcode) return alert('Vui lòng nhập barcode cho tất cả dòng (hoặc xóa dòng trống)'); const detailsFiles = Array.from(ri.inputDetails.files || []); if(detailsFiles.length === 0) return alert('Mỗi dòng cần ít nhất 1 ảnh detail'); }
+    for(const ri of rowInfos){
+      if(!ri.barcode) return alert('Vui lòng nhập barcode cho tất cả dòng (hoặc xóa dòng trống)');
+      let detailsFiles = Array.from(ri.inputDetails.files || []);
+      if(detailsFiles.length === 0 && ri.tr.__prefilledFiles && ri.tr.__prefilledFiles.length) detailsFiles = ri.tr.__prefilledFiles.slice();
+      if(detailsFiles.length === 0) return alert('Mỗi dòng cần ít nhất 1 ảnh detail');
+    }
 
     // detect duplicates
     const duplicates = rowInfos.filter(ri => manifestHas(ri.size, ri.barcode));
     if(duplicates.length > 0){
-      // summary with counts by action
       const countSkip = duplicates.filter(d=>d.action==='skip').length;
       const countOverwrite = duplicates.filter(d=>d.action==='overwrite').length;
       const countUpload = duplicates.filter(d=>d.action==='upload').length;
@@ -622,22 +651,24 @@ function renderAdd(){
       if(!confirm(msg)) return;
     }
 
-    // prepare groups: skip rows with action 'skip' and exists
+    // prepare groups
     const groups = [];
-    for(const ri of rowInfos){ const detailsFiles = Array.from(ri.inputDetails.files || []);
-      const prepared = [];
-      // prepare thumb: if user provided thumb use it; otherwise pick first detail as thumb
-      let thumbFile = null;
-      if(ri.inputThumb && ri.inputThumb.files && ri.inputThumb.files[0]) thumbFile = ri.inputThumb.files[0];
-      else if(detailsFiles.length>0) thumbFile = detailsFiles[0];
+    for(const ri of rowInfos){
+      let detailsFiles = Array.from(ri.inputDetails.files || []);
+      if(detailsFiles.length === 0 && ri.tr.__prefilledFiles && ri.tr.__prefilledFiles.length) detailsFiles = ri.tr.__prefilledFiles.slice();
 
       // if exists and action==='skip' -> skip
       if(manifestHas(ri.size, ri.barcode) && ri.action === 'skip') continue;
 
-      // process thumb
+      const prepared = [];
+      // prepare thumb: if user provided thumb use it; otherwise check prefilled thumb; otherwise pick first detail
+      let thumbFile = null;
+      if(ri.inputThumb && ri.inputThumb.files && ri.inputThumb.files[0]) thumbFile = ri.inputThumb.files[0];
+      else if(ri.tr.__prefilledThumbFile) thumbFile = ri.tr.__prefilledThumbFile;
+      else if(detailsFiles.length>0) thumbFile = detailsFiles[0];
+
       if(thumbFile){ const processed = await convertImageFileToJpeg(thumbFile); const thumb = new File([await processed.arrayBuffer()], 'thumb.jpeg', { type: 'image/jpeg' }); prepared.push({ file: thumb, remoteName: 'thumb.jpeg' }); }
 
-      // details
       for(const f of detailsFiles){ const p = await convertImageFileToJpeg(f); prepared.push({ file: p, remoteName: p.name }); }
 
       groups.push({ size: ri.size, barcode: ri.barcode, prepared });
@@ -664,11 +695,14 @@ function renderAdd(){
       for(const barcode of Object.keys(groupsMap[size])){
         const items = groupsMap[size][barcode];
         const detailFiles = items.map(x=>x.file);
-        const row = addRow({ barcode, size, detailFiles });
-        // set thumb: if exists file with name thumb.* use it else use first file
         const t = items.find(x=>/thumb\./i.test(x.relPath));
         const thumbFile = t ? t.file : (items[0] && items[0].file);
-        if(thumbFile){ row.thumbPreview.src = URL.createObjectURL(thumbFile); row.thumbPreview.style.display='block'; }
+        const rowObj = addRow({ barcode, size, detailFiles, thumbFile });
+        // add prefilled references on tr so upload uses them
+        rowObj.tr.__prefilledFiles = detailFiles.slice();
+        if(thumbFile) rowObj.tr.__prefilledThumbFile = thumbFile;
+        if(rowObj.detailsNote) { rowObj.detailsNote.textContent = `Prefilled ${detailFiles.length} file(s)`; rowObj.detailsNote.style.display='block'; }
+        if(rowObj.thumbNote && thumbFile){ rowObj.thumbNote.textContent = 'Prefilled thumb'; rowObj.thumbNote.style.display='block'; rowObj.thumbPreview.style.display='block'; }
       }
     }
   };
@@ -695,7 +729,7 @@ async function shareMultipleImages(size, barcodeObj){
     else { await mergeImagesAndOpen(urls, size, barcodeObj); }
   } catch(err){ console.error('shareMultipleImages error', err); /* do not alert, fallback to merge */ try{ const encSize = encodeURIComponent(String(size).trim()); const encCode = encodeURIComponent(String(barcodeObj.code).trim()); const urls = (barcodeObj.images || []).map(f => `${WORKER_BASE}/${PREFIX}/${encSize}/${encCode}/${encodeURIComponent(f)}`); await mergeImagesAndOpen(urls, size, barcodeObj); } catch(e) { console.error('fallback merge failed', e); alert('Fallback cũng thất bại: ' + e.message); } }
 }
-async function mergeImagesAndOpen(urls, size, barcodeObj){ try{ const bitmaps = []; for(const u of urls){ const r = await fetch(u, { mode:'cors' }); if(!r.ok) throw new Error('Fetch failed ' + r.status + ' ' + u); const blob = await r.blob(); const bmp = await createImageBitmap(blob); bitmaps.push(bmp); } const gap = 8; const colHeights=[0,0], colMaxW=[0,0]; for(let i=0;i<bitmaps.length;i++){ const col=i%2; colMaxW[col]=Math.max(colMaxW[col], bitmaps[i].width); colHeights[col]+=bitmaps[i].height+gap; } const maxColWidth=900; const scale0 = colMaxW[0] ? Math.min(1, maxColWidth/colMaxW[0]) : 1; const scale1 = colMaxW[1] ? Math.min(1, maxColWidth/colMaxW[1]) : 1; const colW = Math.round(Math.max(colMaxW[0]*scale0, colMaxW[1]*scale1)); const canvasW = colW*2 + gap; const canvasH = Math.round(Math.max(colHeights[0]*scale0, colHeights[1]*scale1) || 400); const canvas = document.createElement('canvas'); canvas.width = canvasW; canvas.height = canvasH; const ctx = canvas.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvasW,canvasH); const y=[0,0]; for(let i=0;i<bitmaps.length;i++){ const bm=bitmaps[i]; const col=i%2; const scale = col===0?scale0:scale1; const drawW=Math.round(bm.width*scale); const drawH=Math.round(bm.height*scale); const x = col===0?0:colW+gap; ctx.drawImage(bm,0,0,bm.width,bm.height,x,y[col],drawW,drawH); y[col]+=drawH+gap; } const blob = await new Promise(res=>canvas.toBlob(res,'image/png',0.92)); const url = URL.createObjectURL(blob); const w = window.open(url,'_blank'); if(!w){ const a=document.createElement('a'); a.href = url; a.target='_blank'; document.body.appendChild(a); a.click(); a.remove(); } setTimeout(()=>URL.revokeObjectURL(url),60000); }catch(e){ console.error('mergeImagesAndOpen error', e); throw e; }
+async function mergeImagesAndOpen(urls, size, barcodeObj){ try{ const bitmaps = []; for(const u of urls){ const r = await fetch(u, { mode: 'cors' }); if(!r.ok) throw new Error('Fetch failed ' + r.status + ' ' + u); const blob = await r.blob(); const bmp = await createImageBitmap(blob); bitmaps.push(bmp); } const gap = 8; const colHeights=[0,0], colMaxW=[0,0]; for(let i=0;i<bitmaps.length;i++){ const col=i%2; colMaxW[col]=Math.max(colMaxW[col], bitmaps[i].width); colHeights[col]+=bitmaps[i].height+gap; } const maxColWidth=900; const scale0 = colMaxW[0] ? Math.min(1, maxColWidth/colMaxW[0]) : 1; const scale1 = colMaxW[1] ? Math.min(1, maxColWidth/colMaxW[1]) : 1; const colW = Math.round(Math.max(colMaxW[0]*scale0, colMaxW[1]*scale1)); const canvasW = colW*2 + gap; const canvasH = Math.round(Math.max(colHeights[0]*scale0, colHeights[1]*scale1) || 400); const canvas = document.createElement('canvas'); canvas.width = canvasW; canvas.height = canvasH; const ctx = canvas.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvasW,canvasH); const y=[0,0]; for(let i=0;i<bitmaps.length;i++){ const bm=bitmaps[i]; const col=i%2; const scale = col===0?scale0:scale1; const drawW=Math.round(bm.width*scale); const drawH=Math.round(bm.height*scale); const x = col===0?0:colW+gap; ctx.drawImage(bm,0,0,bm.width,bm.height,x,y[col],drawW,drawH); y[col]+=drawH+gap; } const blob = await new Promise(res=>canvas.toBlob(res,'image/png',0.92)); const url = URL.createObjectURL(blob); const w = window.open(url,'_blank'); if(!w){ const a=document.createElement('a'); a.href = url; a.target='_blank'; document.body.appendChild(a); a.click(); a.remove(); } setTimeout(()=>URL.revokeObjectURL(url),60000); }catch(e){ console.error('mergeImagesAndOpen error', e); throw e; }
 }
 
 /* Refresh & Clear key handlers */
