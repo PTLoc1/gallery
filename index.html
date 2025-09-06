@@ -45,12 +45,13 @@ main{padding:10px}
 .modal-body{padding:10px;overflow:auto}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .two-col img{width:100%;height:auto;border-radius:6px;display:block}
-@media(max-width:700px){.two-col{grid-template-columns:1fr}}
+/*@media(max-width:700px){.two-col{grid-template-columns:1fr}}
 .barcode-strong{font-weight:700}
 .header-actions { display:flex; gap:8px; align-items:center; }
-.clear-key { font-size:12px; color:#b00; border:none; background:transparent; cursor:pointer; padding:4px; }
-@media (min-width: 1000px) { :root{ --card-padding-mobile:10px; --card-font-mobile:14px; } /* On wide screens use auto-fill but bigger min width so boxes look bigger */ .grid{ grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; } }
-@media (min-width: 600px) { :root{ --card-padding-mobile:8px; --card-font-mobile:13px; } .grid{ grid-template-columns: repeat(4, 1fr); /* 4 cột cho tablet */ gap: 10px; } }
+.clear-key { font-size:12px; color:#b00; border:none; background:transparent; cursor:pointer; padding:4px; } 
+*/
+@media (min-width: 600px) and (max-width: 999px) { :root{ --card-padding-mobile:8px; --card-font-mobile:13px; } .grid{ grid-template-columns: repeat(4, 1fr); gap:10px; } }
+@media (min-width: 1000px) { .grid{ display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; } .card{ flex: 0 0 var(--card-width-desktop); /* fixed card width on desktop */ max-width: var(--card-width-desktop); } }
 /* progress panel */
 .progress-panel { position: fixed; right: 12px; bottom: 12px; width: 360px; max-width: calc(100% - 24px); background: rgba(255,255,255,0.98); border-radius:10px; box-shadow: 0 6px 20px rgba(0,0,0,0.12); padding:10px; z-index:120; font-size:13px; display:none; }
 .progress-panel.open { display:block; }
@@ -529,4 +530,5 @@ init();
 </script>
 </body>
 </html>
+
 
