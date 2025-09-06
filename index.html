@@ -5,43 +5,27 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>77Store - Gallery</title>
 
-<!-- favicon (assume favicon.ico at repo root) -->
 <link rel="icon" type="image/x-icon" href="./favicon.ico">
-<link rel="apple-touch-icon" sizes="180x180" href="./favicon.ico">
 
 <style>
 :root{
   --accent:#2b82c9;
   --header-bg:#e6f3ff;
-  --tab-btn-color: #99ceff; /* requested */
-  --addtab-btn: #7FFFD4; /* Share button color */
+  --tab-btn-color: #99ceff;
   --gap:8px;
   --card-padding-mobile:6px;
   --card-font-mobile:12px;
   --thumb-radius:6px;
   --card-width-desktop:220px;
-  --progress-max-height: 240px; /* shows approx 3 groups */
+  --progress-max-height: 240px;
 }
-
-/* base */
 *{box-sizing:border-box}
 body{font-family:system-ui,Arial;margin:0;background:#f0f6fb;color:#072033}
 body.dark{ background:#111316; color:#d9dee3 }
-header{
-  background:var(--header-bg);
-  padding:10px 12px;
-  box-shadow:0 2px 6px rgba(10,10,10,0.06);
-  position:sticky;
-  top:0;
-  z-index:60;
-  transition: transform .28s ease, box-shadow .2s, background .2s;
-}
+header{ background:var(--header-bg); padding:10px 12px; box-shadow:0 2px 6px rgba(10,10,10,0.06); position:sticky; top:0; z-index:60; }
 body.dark header{ background:#1a1f23 }
-body.dark .card{ background:#15181a }
-header.hidden { transform: translateY(-120%); box-shadow:none; }
 .top-row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .brand{font-weight:700;color:var(--accent);font-size:15px}
-.controls-right{display:flex;gap:8px;align-items:center}
 .search-wrap{flex:1 1 360px;margin-left:8px;min-width:120px;max-width:calc(100% - 260px)}
 .search-input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);font-size:14px}
 .tabs{display:flex;gap:8px;overflow:auto;padding:8px;margin-top:8px}
@@ -49,46 +33,17 @@ header.hidden { transform: translateY(-120%); box-shadow:none; }
 .tab.active{background:var(--accent);color:white}
 main{padding:10px}
 .status{padding:8px 12px;color:#345;font-size:13px}
-
-/* MOBILE grid 3 columns */
-.grid{
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--gap);
-}
-
-/* Card */
-.card{
-  background:white;
-  border-radius:8px;
-  padding:var(--card-padding-mobile);
-  box-shadow:0 1px 4px rgba(12,15,30,0.06);
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-  font-size:var(--card-font-mobile);
-  position:relative;
-  align-items:stretch;
-}
+.grid{ display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap); }
+.card{ background:white;border-radius:8px;padding:var(--card-padding-mobile);box-shadow:0 1px 4px rgba(12,15,30,0.06);display:flex;flex-direction:column;gap:6px;font-size:var(--card-font-mobile);position:relative;align-items:stretch }
 .card .thumb-wrap{ background:#f6f8fa }
+body.dark .card{ background:#15181a }
 body.dark .card .thumb-wrap{ background:#222528 }
-
-/* square thumbnail */
-.thumb-wrap{
-  width:100%;
-  aspect-ratio:1/1;
-  overflow:hidden;
-  border-radius:var(--thumb-radius);
-  background:#f6f8fa;
-}
+.thumb-wrap{ width:100%; aspect-ratio:1/1; overflow:hidden; border-radius:var(--thumb-radius); background:#f6f8fa }
 .card img{width:100%;height:100%;object-fit:cover;display:block}
-
-/* checkboxes etc */
 .checkbox-select{position:absolute;left:8px;top:8px;z-index:20;width:26px;height:26px;transform:scale(1.2);accent-color:var(--accent)}
 .actions-bar{display:flex;gap:8px;align-items:center;margin-bottom:8px}
 .btn{padding:6px 8px;border-radius:6px;border:1px solid #cbd5e1;background:transparent;cursor:pointer;font-size:13px}
 .btn.primary{ background:var(--accent); color:#fff; border-color:var(--accent) }
-.share-btn{ background:var(--addtab-btn); color:#000; border:1px solid rgba(0,0,0,0.08) }
 .small{font-size:13px;color:#444}
 .muted{color:#666;font-size:13px}
 .section-title{margin:10px 0 6px;font-weight:600;font-size:14px}
@@ -102,62 +57,24 @@ body.dark .modal-content{ background:#0f1315; color:#e6e9eb }
 .two-col img{width:100%;height:auto;border-radius:6px;display:block}
 @media(max-width:700px){.two-col{grid-template-columns:1fr}}
 .barcode-strong{font-weight:700}
-.header-actions { display:flex; gap:8px; align-items:center; }
 .clear-key { font-size:12px; color:#b00; border:none; background:transparent; cursor:pointer; padding:4px; }
-
-/* when a tab is active, make internal buttons blue/white (requested color) */
 .tab-open .btn{ background:var(--tab-btn-color); color:#fff; border-color:var(--tab-btn-color); }
-
-/* tablet 4 columns */
-@media (min-width: 600px) and (max-width: 999px) {
-  :root{ --card-padding-mobile:8px; --card-font-mobile:13px; }
-  .grid{ grid-template-columns: repeat(4, 1fr); gap: 10px; }
-}
-
-/* desktop switch to flex wrap layout */
-@media (min-width: 1000px) {
-  .grid{ display:flex; flex-wrap:wrap; gap:12px; align-items:flex-start; }
-  .card{ flex: 0 0 var(--card-width-desktop); max-width: var(--card-width-desktop); }
-}
-
-/* progress panel */
-.progress-panel {
-  position: fixed;
-  right: 12px;
-  bottom: 12px;
-  padding: 10px;
-  padding-bottom: calc(10px + env(safe-area-inset-bottom));
-  width: 360px;
-  max-width: calc(100% - 24px);
-  background: rgba(255,255,255,0.98);
-  border-radius: 10px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
-  z-index: 120;
-  display: none;
-  font-size:13px;
-}
+@media (min-width: 600px) and (max-width: 999px) { .grid{ grid-template-columns: repeat(4, 1fr); gap: 10px; } }
+@media (min-width: 1000px) { .grid{ display:flex; flex-wrap:wrap; gap:12px; align-items:flex-start; } .card{ flex: 0 0 var(--card-width-desktop); max-width: var(--card-width-desktop); } }
+.progress-panel { position: fixed; right: 12px; bottom: 12px; padding: 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); width: 360px; max-width: calc(100% - 24px); background: rgba(255,255,255,0.98); border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.12); z-index: 120; display: none; font-size:13px; }
 .progress-panel.open { display:block; }
-
-/* groups area (scroll shows ~3 groups) */
 .groups-scroll { max-height: var(--progress-max-height); overflow:auto; padding-right:6px; margin-bottom:8px; }
-
-/* group row & file rows */
 .progress-row { margin-bottom:8px; border-bottom:1px solid #eee; padding-bottom:6px; }
 .progress-bar-bg { width:100%; height:8px; background:#eee; border-radius:6px; overflow:hidden; }
 .progress-bar-fill { height:100%; width:0%; background:var(--accent); border-radius:6px; transition: width 0.12s linear; }
 .progress-label { font-size:12px; color:#333; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
 .file-status { font-size:11px; color:#666; }
-
-/* overall progress at bottom */
 .overall-wrap { margin-top:6px; border-top:1px solid #eee; padding-top:8px; }
 .overall-label { display:flex; justify-content:space-between; align-items:center; font-size:13px; margin-bottom:6px; }
-
-/* add-table layout */
 .table-wrap{ overflow:auto; }
 .table-add { width:100%; min-width:900px; border-collapse:collapse; margin:6px 0; }
 .table-add th, .table-add td { border:1px solid #e6eef6; padding:6px; text-align:left; vertical-align:middle; font-size:13px; }
 .table-add th { background:#f7fbff; font-weight:600; }
-/* column sizing: thumb small, barcode & size narrow, details flexible, actions small */
 .table-add th:nth-child(1), .table-add td:nth-child(1) { width:80px; }
 .table-add th:nth-child(2), .table-add td:nth-child(2) { width:140px; }
 .table-add th:nth-child(3), .table-add td:nth-child(3) { width:120px; }
@@ -166,8 +83,7 @@ body.dark .modal-content{ background:#0f1315; color:#e6e9eb }
 .small-thumb { width:60px; height:60px; object-fit:cover; border-radius:6px; background:#fafafa; display:block; }
 .row-actions { display:flex; gap:6px; align-items:center; }
 .prefill-note{ font-size:12px;color:#3a3a3a;margin-top:6px }
-.controls-left .btn{ margin-right:8px } /* spacing between buttons */
-
+.controls-left .btn{ margin-right:8px }
 </style>
 </head>
 <body>
@@ -176,24 +92,19 @@ body.dark .modal-content{ background:#0f1315; color:#e6e9eb }
     <div style="display:flex;align-items:center;gap:8px">
       <div class="brand">77Store - Gallery</div>
     </div>
-
     <div class="search-wrap">
       <input id="searchInput" class="search-input" placeholder="Tìm theo barcode (VD: 146888) — Enter để tìm" />
     </div>
-
     <div class="header-actions">
       <button id="themeToggle" class="btn">Light/Dark</button>
       <button id="refreshBtn" class="btn">Refresh</button>
       <button id="clearKeyBtn" class="clear-key" title="Xóa Admin Key trong session">Clear Key</button>
     </div>
   </div>
-
   <div id="tabs" class="tabs"></div>
 </header>
-
 <main id="mainContent">
   <div id="status" class="status">Đang tải manifest...</div>
-
   <div id="selectActions" style="display:none;margin:8px 12px;">
     <div class="actions-bar">
       <div><strong>Chế độ xóa:</strong> Chọn các mục để xóa vĩnh viễn</div>
@@ -201,42 +112,29 @@ body.dark .modal-content{ background:#0f1315; color:#e6e9eb }
       <div style="margin-left:12px;" class="muted">Hành động không thể hoàn tác. Bạn sẽ nhập ADMIN_KEY (lưu trong session) khi thực hiện.</div>
     </div>
   </div>
-
   <div id="content"></div>
 </main>
-
-<!-- modal -->
 <div id="modal" class="modal" role="dialog" aria-hidden="true">
   <div class="modal-content">
     <div class="modal-header">
       <div><strong id="modalTitle"></strong></div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button id="modalClose" class="btn">Đóng</button>
-      </div>
+      <div style="display:flex;gap:8px;align-items:center"><button id="modalClose" class="btn">Đóng</button></div>
     </div>
     <div class="modal-body" id="modalBody"></div>
   </div>
 </div>
-
-<!-- progress panel -->
 <div id="progressPanel" class="progress-panel" aria-hidden="true">
   <div class="groups-scroll" id="groupsContainer"></div>
-
   <div class="overall-wrap">
     <div class="overall-label"><div>Overall</div><div id="overallPercent">0%</div></div>
     <div class="progress-bar-bg"><div id="overallBar" class="progress-bar-fill" style="width:0%"></div></div>
-    <div style="display:flex;justify-content:flex-end;margin-top:8px">
-      <button id="closeProgressBtn" class="btn">Ẩn</button>
-    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:8px"><button id="closeProgressBtn" class="btn">Ẩn</button></div>
   </div>
 </div>
 
 <script>
-/* CONFIG */
 const WORKER_BASE = "https://shoes-worker.lapproak0.workers.dev";
 const PREFIX = "Shoes";
-
-/* DOM refs */
 const headerEl = document.getElementById('pageHeader');
 const statusEl = document.getElementById('status');
 const tabsEl = document.getElementById('tabs');
@@ -249,475 +147,124 @@ const modal = document.getElementById('modal');
 const modalTitle = document.getElementById('modalTitle');
 const modalBody = document.getElementById('modalBody');
 const themeToggle = document.getElementById('themeToggle');
-
 const progressPanel = document.getElementById('progressPanel');
 const groupsContainer = document.getElementById('groupsContainer');
 const overallBar = document.getElementById('overallBar');
 const overallPercent = document.getElementById('overallPercent');
 const closeProgressBtn = document.getElementById('closeProgressBtn');
-
-let manifestRaw = null;
-let manifest = null;
-let manifestMap = {};
-let activeTab = 'all';
-let selectedItems = new Set();
-
-/* session admin key */
+let manifestRaw = null; let manifest = null; let manifestMap = {}; let activeTab = 'all'; let selectedItems = new Set();
 function getAdminKeySession(){ return sessionStorage.getItem('admin_key_v1') || null; }
 function setAdminKeySession(key){ if(!key) sessionStorage.removeItem('admin_key_v1'); else sessionStorage.setItem('admin_key_v1', key); }
 function promptAdminKeyIfNeeded(){ const existing = getAdminKeySession(); if(existing) return existing; const k = prompt('Nhập ADMIN_KEY (sẽ lưu trong session cho phiên này):'); if(!k) return null; const t=k.trim(); setAdminKeySession(t); return t; }
-
-/* theme */
 function applyTheme(isDark){ document.body.classList.toggle('dark', !!isDark); sessionStorage.setItem('dark_mode_v1', !!isDark); }
 themeToggle.onclick = ()=>{ const isDark = !document.body.classList.contains('dark'); applyTheme(isDark); };
 (function(){ const ds = sessionStorage.getItem('dark_mode_v1'); if(ds==='true') applyTheme(true); })();
-
-/* UX helpers */
 function logStatus(msg){ statusEl.textContent = msg; console.log(msg); }
 function showModal(title, htmlOrNode){ modalTitle.textContent = title; if(typeof htmlOrNode === 'string') modalBody.innerHTML = htmlOrNode; else { modalBody.innerHTML=''; modalBody.appendChild(htmlOrNode);} modal.classList.add('open'); modal.setAttribute('aria-hidden','false'); }
 document.getElementById('modalClose').onclick = ()=>{ modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); };
 modal.onclick = (e)=>{ if(e.target === modal) document.getElementById('modalClose').click(); };
-
-/* normalize manifest into { sizes: [ {size, barcodes:[{code,images}]} ] } */
-function normalizeManifest(raw){
-  if(!raw) return { sizes: [] };
-  if(Array.isArray(raw)) return { sizes: raw };
-  if(raw.sizes && Array.isArray(raw.sizes)) {
-    return { sizes: raw.sizes.map(s=>({ size: String(s.size||s.name||'').trim(), barcodes: Array.isArray(s.barcodes) ? s.barcodes.map(b=>({ code: String(b.code||'').trim(), images: Array.isArray(b.images)?b.images.slice():[] })) : [] })) };
-  }
-  const sizes=[];
-  for(const [k,v] of Object.entries(raw)){
-    if(k==='meta'||k==='version') continue;
-    if(v && typeof v === 'object' && !Array.isArray(v)){
-      const barcodes=[];
-      for(const [code, imgs] of Object.entries(v)){ if(Array.isArray(imgs)) barcodes.push({ code: String(code).trim(), images: imgs.slice() }); }
-      sizes.push({ size: String(k).trim(), barcodes });
-    }
-  }
-  sizes.sort((a,b)=> { const ai=parseInt(a.size), bi=parseInt(b.size); if(!isNaN(ai)&&!isNaN(bi)) return ai-bi; return a.size.localeCompare(b.size); });
-  return { sizes };
-}
-
-function buildManifestMap(){
-  manifestMap = {};
-  if(!manifest || !Array.isArray(manifest.sizes)) return;
-  for(const s of manifest.sizes){
-    const sizeKey = String(s.size).trim();
-    manifestMap[sizeKey] = manifestMap[sizeKey] || {};
-    for(const b of s.barcodes){ manifestMap[sizeKey][String(b.code).trim()] = true; }
-  }
-}
+function normalizeManifest(raw){ if(!raw) return { sizes: [] }; if(Array.isArray(raw)) return { sizes: raw }; if(raw.sizes && Array.isArray(raw.sizes)) { return { sizes: raw.sizes.map(s=>({ size: String(s.size||s.name||'').trim(), barcodes: Array.isArray(s.barcodes) ? s.barcodes.map(b=>({ code: String(b.code||'').trim(), images: Array.isArray(b.images)?b.images.slice():[] })) : [] })) }; } const sizes=[]; for(const [k,v] of Object.entries(raw)){ if(k==='meta'||k==='version') continue; if(v && typeof v === 'object' && !Array.isArray(v)){ const barcodes=[]; for(const [code, imgs] of Object.entries(v)){ if(Array.isArray(imgs)) barcodes.push({ code: String(code).trim(), images: imgs.slice() }); } sizes.push({ size: String(k).trim(), barcodes }); } } sizes.sort((a,b)=> { const ai=parseInt(a.size), bi=parseInt(b.size); if(!isNaN(ai)&&!isNaN(bi)) return ai-bi; return a.size.localeCompare(b.size); }); return { sizes }; }
+function buildManifestMap(){ manifestMap = {}; if(!manifest || !Array.isArray(manifest.sizes)) return; for(const s of manifest.sizes){ const sizeKey = String(s.size).trim(); manifestMap[sizeKey] = manifestMap[sizeKey] || {}; for(const b of s.barcodes){ manifestMap[sizeKey][String(b.code).trim()] = true; } } }
 function manifestHas(size, barcode){ return !!(manifestMap[String(size).trim()] && manifestMap[String(size).trim()][String(barcode).trim()]); }
-
-/* fetch manifest */
-async function fetchManifest({ forceRefresh=false }={}) {
-  try {
-    logStatus('Loading manifest...');
-    if(forceRefresh){
-      const key = promptAdminKeyIfNeeded(); if(!key){ alert('Hủy: cần ADMIN_KEY'); return; }
-      const r = await fetch(WORKER_BASE + '/refresh-manifest', { method:'POST', headers:{ 'x-api-key': key }});
-      if(!r.ok){ const t=await r.text().catch(()=>r.statusText); throw new Error('Refresh failed: ' + t); }
-      manifestRaw = await r.json();
-    } else {
-      const r = await fetch(WORKER_BASE + '/manifest.json', { cache:'no-store' });
-      if(!r.ok){ const t=await r.text().catch(()=>r.statusText); throw new Error('manifest fetch ' + r.status); }
-      manifestRaw = await r.json();
-    }
-    manifest = normalizeManifest(manifestRaw || {});
-    buildManifestMap();
-    logStatus('Loaded manifest (sizes: ' + manifest.sizes.length + ')');
-    buildTabs();
-  } catch(err){
-    console.error(err); logStatus('Không load được manifest: ' + err.message); contentEl.innerHTML='';
-  }
-}
-
-/* tab helpers */
-function createTabButton(text, key){
-  const btn = document.createElement('button');
-  btn.className = 'tab' + (activeTab===key ? ' active' : '');
-  btn.textContent = text; btn.dataset.key = key;
-  btn.onclick = ()=>{
-    activeTab = key;
-    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-    btn.classList.add('active');
-    setActiveButton();
-    renderAccording();
-    updateHeaderVisibility();
-    // set body class for tab-open styles (apply to all tabs including 'all')
-    document.body.classList.toggle('tab-open', true);
-  };
-  return btn;
-}
+async function fetchManifest({ forceRefresh=false }={}){ try{ logStatus('Loading manifest...'); if(forceRefresh){ const key = promptAdminKeyIfNeeded(); if(!key){ alert('Hủy: cần ADMIN_KEY'); return; } const r = await fetch(WORKER_BASE + '/refresh-manifest', { method:'POST', headers:{ 'x-api-key': key }}); if(!r.ok){ const t=await r.text().catch(()=>r.statusText); throw new Error('Refresh failed: ' + t); } manifestRaw = await r.json(); } else { const r = await fetch(WORKER_BASE + '/manifest.json', { cache:'no-store' }); if(!r.ok){ const t=await r.text().catch(()=>r.statusText); throw new Error('manifest fetch ' + r.status); } manifestRaw = await r.json(); } manifest = normalizeManifest(manifestRaw || {}); buildManifestMap(); logStatus('Loaded manifest (sizes: ' + manifest.sizes.length + ')'); buildTabs(); }catch(err){ console.error(err); logStatus('Không load được manifest: ' + err.message); contentEl.innerHTML=''; }}
+function createTabButton(text, key){ const btn = document.createElement('button'); btn.className = 'tab' + (activeTab===key ? ' active' : ''); btn.textContent = text; btn.dataset.key = key; btn.onclick = ()=>{ activeTab = key; document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); btn.classList.add('active'); setActiveButton(); renderAccording(); updateHeaderVisibility(); document.body.classList.toggle('tab-open', true); }; return btn; }
 function setActiveButton(){ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); const btn = document.querySelector(`.tab[data-key=\"${activeTab}\"]`); if(btn) btn.classList.add('active'); }
-function buildTabs(){ tabsEl.innerHTML = ''; tabsEl.appendChild(createTabButton('Tất cả','all'));
-  for(const s of manifest.sizes) tabsEl.appendChild(createTabButton(String(s.size), 'size:'+s.size));
-  const spacer = document.createElement('div'); spacer.style.flex='1'; tabsEl.appendChild(spacer);
-  // add manual size button
-  const addSizeBtn = document.createElement('button'); addSizeBtn.className='tab'; addSizeBtn.textContent='Thêm size mới'; addSizeBtn.onclick = ()=>{ const nv = prompt('Nhập size mới (ví dụ 49):'); if(!nv) return; const v = String(nv).trim(); if(manifestMap[v]) return alert('Size đã tồn tại'); manifest.sizes.push({ size: v, barcodes: [] }); buildManifestMap(); buildTabs(); activeTab = 'size:'+v; setActiveButton(); renderAccording(); };
-  tabsEl.appendChild(addSizeBtn);
-  tabsEl.appendChild(createTabButton('Thêm','add'));
-  tabsEl.appendChild(createTabButton('Chọn để xóa','select-delete'));
-  setActiveButton(); renderAccording(); }
-
-/* header hide: only auto-hide on 'all' and 'size:*' and only when not at top */
+function buildTabs(){ tabsEl.innerHTML = ''; tabsEl.appendChild(createTabButton('Tất cả','all')); for(const s of manifest.sizes) tabsEl.appendChild(createTabButton(String(s.size), 'size:'+s.size)); const spacer = document.createElement('div'); spacer.style.flex='1'; tabsEl.appendChild(spacer); tabsEl.appendChild(createTabButton('Thêm','add')); tabsEl.appendChild(createTabButton('Chọn để xóa','select-delete')); setActiveButton(); renderAccording(); }
 function updateHeaderVisibility(){ const shouldAutoHide = (activeTab==='all' || activeTab.startsWith('size:')); if(!shouldAutoHide){ headerEl.classList.remove('hidden'); return; } if(window.scrollY === 0) headerEl.classList.remove('hidden'); else headerEl.classList.add('hidden'); }
 window.addEventListener('scroll', ()=>{ updateHeaderVisibility(); });
-
-/* utility */
 function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c])); }
-
-/* make card: heading removed 'Size' prefix; modal title shows size value only when open */
-function makeCard(size, bc, withCheckbox=false){
-  const card = document.createElement('div'); card.className='card';
-  if(withCheckbox){
-    const cb = document.createElement('input'); cb.type='checkbox'; cb.className='checkbox-select';
-    const key = `${String(size).trim()}|${String(bc.code).trim()}`;
-    cb.checked = selectedItems.has(key);
-    cb.onchange = (e)=> { if(e.target.checked) selectedItems.add(key); else selectedItems.delete(key); };
-    card.appendChild(cb);
-  }
-  const thumbName = (Array.isArray(bc.images) && bc.images.find(x=>/thumb/i.test(x))) || (Array.isArray(bc.images)? bc.images[0] : null) || 'thumb.jpeg';
-  const encSize = encodeURIComponent(String(size).trim());
-  const encCode = encodeURIComponent(String(bc.code).trim());
-  const src = `${WORKER_BASE}/${PREFIX}/${encSize}/${encCode}/${encodeURIComponent(thumbName)}`;
-
-  const wrap = document.createElement('div'); wrap.className='thumb-wrap';
-  const img = document.createElement('img'); img.src = src; img.alt = bc.code;
-  img.onerror = ()=>{ img.style.opacity=0.6; img.style.objectFit='contain' };
-  img.onclick = ()=> openDetails(size, bc);
-  wrap.appendChild(img);
-  card.appendChild(wrap);
-
-  const row = document.createElement('div'); row.style.display='flex'; row.style.justifyContent='center';
-  const shareBtn = document.createElement('button'); shareBtn.className='btn share-btn';
-  shareBtn.innerHTML = `Share <span class="barcode-strong">${escapeHtml(String(bc.code))}</span>`;
-  shareBtn.onclick = ()=> shareMultipleImages(size, bc);
-  row.appendChild(shareBtn);
-  card.appendChild(row);
-
-  return card;
-}
-
-/* open details modal */
-function openDetails(size, bc){
-  modalTitle.textContent = `${size} — ${bc.code}`;
-  modalBody.innerHTML = '';
-  const imgs = bc.images || [];
-  const div = document.createElement('div'); div.className='two-col';
-  for(const fn of imgs){ const im = document.createElement('img'); im.src = `${WORKER_BASE}/${PREFIX}/${encodeURIComponent(String(size).trim())}/${encodeURIComponent(String(bc.code).trim())}/${encodeURIComponent(fn)}`; div.appendChild(im); }
-  modalBody.appendChild(div); modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
-}
-
-/* render: All */
+function makeCard(size, bc, withCheckbox=false){ const card = document.createElement('div'); card.className='card'; if(withCheckbox){ const cb = document.createElement('input'); cb.type='checkbox'; cb.className='checkbox-select'; const key = `${String(size).trim()}|${String(bc.code).trim()}`; cb.checked = selectedItems.has(key); cb.onchange = (e)=> { if(e.target.checked) selectedItems.add(key); else selectedItems.delete(key); }; card.appendChild(cb); } const thumbName = (Array.isArray(bc.images) && bc.images.find(x=>/thumb/i.test(x))) || (Array.isArray(bc.images)? bc.images[0] : null) || 'thumb.jpeg'; const encSize = encodeURIComponent(String(size).trim()); const encCode = encodeURIComponent(String(bc.code).trim()); const src = `${WORKER_BASE}/${PREFIX}/${encSize}/${encCode}/${encodeURIComponent(thumbName)}`; const wrap = document.createElement('div'); wrap.className='thumb-wrap'; const img = document.createElement('img'); img.src = src; img.alt = bc.code; img.onerror = ()=>{ img.style.opacity=0.6; img.style.objectFit='contain' }; img.onclick = ()=> openDetails(size, bc); wrap.appendChild(img); card.appendChild(wrap); const row = document.createElement('div'); row.style.display='flex'; row.style.justifyContent='center'; const shareBtn = document.createElement('button'); shareBtn.className='btn'; shareBtn.innerHTML = `Share <span class="barcode-strong">${escapeHtml(String(bc.code))}</span>`; shareBtn.onclick = ()=> shareMultipleImages(size, bc); row.appendChild(shareBtn); card.appendChild(row); return card; }
+function openDetails(size, bc){ modalTitle.textContent = `${size} — ${bc.code}`; modalBody.innerHTML = ''; const imgs = bc.images || []; const div = document.createElement('div'); div.className='two-col'; for(const fn of imgs){ const im = document.createElement('img'); im.src = `${WORKER_BASE}/${PREFIX}/${encodeURIComponent(String(size).trim())}/${encodeURIComponent(String(bc.code).trim())}/${encodeURIComponent(fn)}`; div.appendChild(im); } modalBody.appendChild(div); modal.classList.add('open'); modal.setAttribute('aria-hidden','false'); }
 function renderAll(){ contentEl.innerHTML = ''; for(const s of manifest.sizes){ const h=document.createElement('div'); h.className='section-title'; h.textContent = s.size; contentEl.appendChild(h); const grid=document.createElement('div'); grid.className='grid'; for(const bc of s.barcodes) grid.appendChild(makeCard(s.size, bc, false)); contentEl.appendChild(grid); } }
-
-/* render specific size */
 function renderSize(sizeStr){ contentEl.innerHTML = ''; const s = manifest.sizes.find(x=>String(x.size)===String(sizeStr)); if(!s){ contentEl.innerHTML='<div class="muted">Không có size này</div>'; return; } const grid=document.createElement('div'); grid.className='grid'; for(const bc of s.barcodes) grid.appendChild(makeCard(s.size, bc, false)); contentEl.appendChild(grid); }
-
-/* select-delete */
 function renderSelectDelete(){ contentEl.innerHTML=''; document.getElementById('selectActions') && (document.getElementById('selectActions').style.display='block'); selectedItems.clear(); for(const s of manifest.sizes){ const h=document.createElement('div'); h.className='section-title'; h.textContent = s.size; contentEl.appendChild(h); const grid=document.createElement('div'); grid.className='grid'; for(const bc of s.barcodes) grid.appendChild(makeCard(s.size, bc, true)); contentEl.appendChild(grid); } }
-
-/* delete selected (permanent) */
 if(deleteSelectedBtn){ deleteSelectedBtn.onclick = async ()=>{ if(selectedItems.size===0) return alert('Chưa chọn mục để xóa'); if(!confirm('Xóa các mục đã chọn? (Vĩnh viễn, không thể hoàn tác)')) return; const key = promptAdminKeyIfNeeded(); if(!key){ alert('Hủy: cần ADMIN_KEY'); return; } const items = Array.from(selectedItems).map(s=>{ const [size, barcode] = s.split('|'); return { size, barcode }; }); try{ const r = await fetch(WORKER_BASE + '/bulk-delete', { method:'POST', headers:{ 'Content-Type':'application/json','x-api-key': key }, body: JSON.stringify({ items })}); if(!r.ok){ const t = await r.text().catch(()=>r.statusText); throw new Error('Delete failed: ' + t); } const j = await r.json(); alert('Xóa hoàn tất. Deleted keys: ' + (j.totalDeleted||0)); await fetchManifest(); activeTab='all'; renderAccording(); } catch(err){ console.error(err); alert('Lỗi xóa: ' + err.message); } }; }
-
-/* -----------------------
-   upload & progress utilities (XHR based)
-   ----------------------- */
-
 function showProgressPanel(){ progressPanel.classList.add('open'); progressPanel.setAttribute('aria-hidden','false'); }
 function hideProgressPanel(){ progressPanel.classList.remove('open'); progressPanel.setAttribute('aria-hidden','true'); }
-closeProgressBtn.onclick = ()=> hideProgressPanel();
-
-function scrollProgressToBottom(){ groupsContainer.scrollTop = groupsContainer.scrollHeight; }
-
+closeProgressBtn.onclick = ()=> hideProgressPanel(); function scrollProgressToBottom(){ groupsContainer.scrollTop = groupsContainer.scrollHeight; }
 function updateOverallProgress(loaded, total){ const pct = total? Math.round(loaded/total*100) : 0; overallBar.style.width = pct + '%'; overallPercent.textContent = pct + '%'; scrollProgressToBottom(); }
-
 function createGroupProgress(groupId, label){ const row = document.createElement('div'); row.className = 'progress-row'; row.id = 'group-' + groupId; const lbl = document.createElement('div'); lbl.className = 'progress-label'; lbl.innerHTML = `<span>${escapeHtml(label)}</span><span class="group-percent">0%</span>`; const barBg = document.createElement('div'); barBg.className = 'progress-bar-bg'; const barFill = document.createElement('div'); barFill.className = 'progress-bar-fill'; barBg.appendChild(barFill); const fileList = document.createElement('div'); fileList.className = 'file-list'; row.appendChild(lbl); row.appendChild(barBg); row.appendChild(fileList); groupsContainer.appendChild(row); scrollProgressToBottom(); return { row, lbl, barFill, fileList }; }
 function addFileStatus(fileListEl, fname){ const div = document.createElement('div'); div.className = 'file-status-row'; div.innerHTML = `<div style="display:flex;justify-content:space-between"><div>${escapeHtml(fname)}</div><div class="file-status">0%</div></div><div class="progress-bar-bg" style="margin-top:6px"><div class="progress-bar-fill" style="width:0%"></div></div>`; fileListEl.appendChild(div); scrollProgressToBottom(); return { container: div, progressFill: div.querySelector('.progress-bar-fill'), statusEl: div.querySelector('.file-status') }; }
 function updateFileProgress(fileObj, loaded, total){ const pct = total ? Math.round(loaded/total*100) : 0; fileObj.progressFill.style.width = pct + '%'; fileObj.statusEl.textContent = pct + '%'; scrollProgressToBottom(); }
 function updateGroupProgress(groupEl, loaded, total){ const pct = total? Math.round(loaded/total*100) : 0; groupEl.barFill.style.width = pct + '%'; const percentEl = groupEl.row.querySelector('.group-percent'); if(percentEl) percentEl.textContent = pct + '%'; scrollProgressToBottom(); }
-
-/* XHR upload with onprogress callback */
 function uploadFileWithProgress(url, file, onProgress){ return new Promise((resolve, reject) => { const xhr = new XMLHttpRequest(); xhr.open('PUT', url, true); if (file.type) xhr.setRequestHeader('Content-Type', file.type); xhr.upload.onprogress = (ev) => { if (ev.lengthComputable && typeof onProgress === 'function') onProgress(ev.loaded, ev.total); }; xhr.onload = () => { if (xhr.status >= 200 && xhr.status < 300) resolve({ ok:true, status: xhr.status, response: xhr.responseText }); else reject(new Error('Upload failed: ' + xhr.status + ' ' + xhr.statusText + ' - ' + xhr.responseText)); }; xhr.onerror = () => reject(new Error('Network error during upload')); xhr.send(file); }); }
-
-/* convert image to jpeg with canvas resize */
 async function convertImageFileToJpeg(file, maxWidth=1600, quality=0.80){ if(!file.type || !file.type.startsWith('image/')) return file; try{ const imgBitmap = await createImageBitmap(file); const scale = imgBitmap.width > maxWidth ? maxWidth / imgBitmap.width : 1; const w = Math.round(imgBitmap.width * scale); const h = Math.round(imgBitmap.height * scale); const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(imgBitmap, 0, 0, w, h); const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', quality)); const newName = (file.name.replace(/\.[^/.]+$/, '') || 'image') + '.jpeg'; return new File([blob], newName, { type: 'image/jpeg' }); } catch(e){ console.warn('convertImageFileToJpeg failed', e); return file; } }
-
-/* uploadPreparedGroups (sequential), shows progress panel and respects groups scroll area */
 async function uploadPreparedGroups(preparedGroups, adminKey){ let overallTotal = 0; for(const g of preparedGroups) for(const p of g.prepared) overallTotal += p.file.size; let overallLoaded = 0; showProgressPanel(); groupsContainer.innerHTML = ''; updateOverallProgress(0, overallTotal);
-
   for(const [gi, g] of preparedGroups.entries()){
     const gid = `${g.size}|${g.barcode}|${gi}`;
-    // if size not in manifestMap, create temporary entry so UI updates
-    if(!manifestMap[g.size]){
-      manifest.sizes.push({ size: String(g.size), barcodes: [] });
-      buildManifestMap();
-      buildTabs();
-    }
-
+    if(!manifestMap[g.size]){ manifest.sizes.push({ size: String(g.size), barcodes: [] }); buildManifestMap(); buildTabs(); }
     const groupEl = createGroupProgress(gid, `${g.size} — ${g.barcode}`);
     const groupTotal = g.prepared.reduce((s,p)=>s + p.file.size, 0);
     let groupLoaded = 0;
     const fileObjs = [];
     for(const p of g.prepared) fileObjs.push(addFileStatus(groupEl.fileList, p.remoteName));
-
-    // presign
     const filenames = g.prepared.map(p=>p.remoteName);
     const presignRes = await fetch(WORKER_BASE + '/presign-upload', { method:'POST', headers:{ 'Content-Type':'application/json', 'x-api-key': adminKey }, body: JSON.stringify({ size: g.size, barcode: g.barcode, files: filenames, expiresIn: 3600 })});
     if(!presignRes.ok){ const t = await presignRes.text().catch(()=>presignRes.statusText); throw new Error('Presign failed: ' + t); }
-    const presignJson = await presignRes.json();
-    const urls = presignJson.urls || {};
-
-    // upload sequentially with XHR
+    const presignJson = await presignRes.json(); const urls = presignJson.urls || {};
     for(let i=0;i<g.prepared.length;i++){
-      const p = g.prepared[i];
-      const fileObj = fileObjs[i];
-      const url = urls[p.remoteName];
-      if(!url) throw new Error('Missing presigned URL for ' + p.remoteName);
-      try{
-        await uploadFileWithProgress(url, p.file, (loaded, total)=>{
-          updateFileProgress(fileObj, loaded, total);
-          const groupEstimate = groupLoaded + loaded;
-          updateGroupProgress(groupEl, Math.min(groupEstimate, groupTotal), groupTotal);
-          updateOverallProgress(overallLoaded + loaded, overallTotal);
-        });
-        updateFileProgress(fileObj, p.file.size, p.file.size);
-        groupLoaded += p.file.size;
-        overallLoaded += p.file.size;
-        updateGroupProgress(groupEl, groupLoaded, groupTotal);
-        updateOverallProgress(overallLoaded, overallTotal);
-        fileObj.statusEl.textContent = 'OK';
-      } catch(e){ fileObj.statusEl.textContent = 'ERR'; console.error('Upload file error', e); throw e; }
+      const p = g.prepared[i]; const fileObj = fileObjs[i]; const url = urls[p.remoteName]; if(!url) throw new Error('Missing presigned URL for ' + p.remoteName);
+      try{ await uploadFileWithProgress(url, p.file, (loaded, total)=>{ updateFileProgress(fileObj, loaded, total); const groupEstimate = groupLoaded + loaded; updateGroupProgress(groupEl, Math.min(groupEstimate, groupTotal), groupTotal); updateOverallProgress(overallLoaded + loaded, overallTotal); }); updateFileProgress(fileObj, p.file.size, p.file.size); groupLoaded += p.file.size; overallLoaded += p.file.size; updateGroupProgress(groupEl, groupLoaded, groupTotal); updateOverallProgress(overallLoaded, overallTotal); fileObj.statusEl.textContent = 'OK'; } catch(e){ fileObj.statusEl.textContent = 'ERR'; console.error('Upload file error', e); throw e; }
     }
-
-    // complete group
-    const complete = await fetch(WORKER_BASE + '/complete-upload', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ size: g.size, barcode: g.barcode })});
-    if(!complete.ok){ const t = await complete.text().catch(()=>complete.statusText); throw new Error('Complete-upload failed: ' + t); }
+    const complete = await fetch(WORKER_BASE + '/complete-upload', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ size: g.size, barcode: g.barcode })}); if(!complete.ok){ const t = await complete.text().catch(()=>complete.statusText); throw new Error('Complete-upload failed: ' + t); }
   }
-
-  // finish
   updateOverallProgress(overallLoaded, overallTotal);
-  // leave panel open for user to review
 }
 
-/* convenience wrapper for single group */
-async function presignAndUploadGroup(size, barcode, prepared, adminKey){ await uploadPreparedGroups([{ size, barcode, prepared }], adminKey); }
+function renderAdd(){ contentEl.innerHTML = ''; const container = document.createElement('div'); container.style.background = '#fff'; container.style.padding = '12px'; container.style.borderRadius = '8px'; const controls = document.createElement('div'); controls.style.display='flex'; controls.style.justifyContent='space-between'; controls.style.alignItems='center'; const left = document.createElement('div'); left.className='controls-left'; const addRowBtn = document.createElement('button'); addRowBtn.className='btn'; addRowBtn.textContent = '+ Thêm dòng'; left.appendChild(addRowBtn); const uploadAllBtn = document.createElement('button'); uploadAllBtn.className='btn'; uploadAllBtn.textContent = 'Upload rows'; left.appendChild(uploadAllBtn); const globalAction = document.createElement('select'); const gOpt1 = document.createElement('option'); gOpt1.value='skip'; gOpt1.textContent='Skip if exists (mặc định)'; const gOpt2 = document.createElement('option'); gOpt2.value='overwrite'; gOpt2.textContent='Overwrite if exists'; const gOpt3 = document.createElement('option'); gOpt3.value='upload'; gOpt3.textContent='Always upload'; globalAction.appendChild(gOpt1); globalAction.appendChild(gOpt2); globalAction.appendChild(gOpt3); globalAction.style.marginLeft='10px'; left.appendChild(globalAction); controls.appendChild(left); const right = document.createElement('div'); right.style.display='flex'; right.style.gap='8px'; right.style.alignItems='center'; const previewAllBtn = document.createElement('button'); previewAllBtn.className='btn'; previewAllBtn.textContent='Preview all'; right.appendChild(previewAllBtn); controls.appendChild(right); container.appendChild(controls); const tableWrap = document.createElement('div'); tableWrap.className='table-wrap'; const table = document.createElement('table'); table.className='table-add'; const thead = document.createElement('thead'); thead.innerHTML = `<tr><th>Thumb</th><th>Barcode</th><th>Size</th><th>Details</th><th>Action</th></tr>`; table.appendChild(thead); const tbody = document.createElement('tbody'); table.appendChild(tbody); tableWrap.appendChild(table); container.appendChild(tableWrap); const folderLabel = document.createElement('div'); folderLabel.className='muted'; folderLabel.textContent='Optional: chọn folder "Shoes" (desktop Chrome/Edge only)'; const folderInput = document.createElement('input'); folderInput.type='file'; folderInput.webkitdirectory=true; folderInput.directory=true; folderInput.multiple=true; folderInput.style.display='block'; folderInput.style.marginTop='8px'; container.appendChild(folderLabel); container.appendChild(folderInput);
+  function createSizeSelect(selected){ const sel = document.createElement('select'); for(const s of manifest.sizes){ const o = document.createElement('option'); o.value = s.size; o.textContent = s.size; if(String(s.size) === String(selected)) o.selected = true; sel.appendChild(o); } const oNew = document.createElement('option'); oNew.value='__new__'; oNew.textContent='Thêm size mới...'; sel.appendChild(oNew); return sel; }
 
-/* -------------------------
-   Add tab: spreadsheet-like table
-   ------------------------- */
-
-function renderAdd(){
-  contentEl.innerHTML = '';
-
-  const container = document.createElement('div'); container.style.background = '#fff'; container.style.padding = '12px'; container.style.borderRadius = '8px';
-
-  // controls
-  const controls = document.createElement('div'); controls.style.display='flex'; controls.style.justifyContent='space-between'; controls.style.alignItems='center';
-  const left = document.createElement('div'); left.className='controls-left';
-  const addRowBtn = document.createElement('button'); addRowBtn.className='btn'; addRowBtn.textContent = '+ Thêm dòng';
-  left.appendChild(addRowBtn);
-  const uploadAllBtn = document.createElement('button'); uploadAllBtn.className='btn'; uploadAllBtn.textContent = 'Upload rows';
-  left.appendChild(uploadAllBtn);
-
-  // global action select (apply to all rows)
-  const globalAction = document.createElement('select');
-  const gOpt1 = document.createElement('option'); gOpt1.value='skip'; gOpt1.textContent='Skip if exists (mặc định)';
-  const gOpt2 = document.createElement('option'); gOpt2.value='overwrite'; gOpt2.textContent='Overwrite if exists';
-  const gOpt3 = document.createElement('option'); gOpt3.value='upload'; gOpt3.textContent='Always upload';
-  globalAction.appendChild(gOpt1); globalAction.appendChild(gOpt2); globalAction.appendChild(gOpt3);
-  globalAction.style.marginLeft='10px';
-  left.appendChild(globalAction);
-
-  controls.appendChild(left);
-
-  const right = document.createElement('div'); right.style.display='flex'; right.style.gap='8px'; right.style.alignItems='center';
-  const previewAllBtn = document.createElement('button'); previewAllBtn.className='btn'; previewAllBtn.textContent='Preview all';
-  right.appendChild(previewAllBtn);
-  controls.appendChild(right);
-
-  container.appendChild(controls);
-
-  // table wrapper (allow horizontal scroll)
-  const tableWrap = document.createElement('div'); tableWrap.className='table-wrap';
-  const table = document.createElement('table'); table.className='table-add';
-  const thead = document.createElement('thead');
-  thead.innerHTML = `<tr><th>Thumb</th><th>Barcode</th><th>Size</th><th>Details</th><th>Action</th></tr>`;
-  table.appendChild(thead);
-  const tbody = document.createElement('tbody');
-  table.appendChild(tbody);
-  tableWrap.appendChild(table);
-  container.appendChild(tableWrap);
-
-  // optional folder input (kept inside Add tab only)
-  const folderLabel = document.createElement('div'); folderLabel.className='muted'; folderLabel.textContent='Optional: chọn folder "Shoes" (desktop Chrome/Edge only)';
-  const folderInput = document.createElement('input'); folderInput.type='file'; folderInput.webkitdirectory=true; folderInput.directory=true; folderInput.multiple=true;
-  folderInput.style.display='block'; folderInput.style.marginTop='8px';
-
-  container.appendChild(folderLabel);
-  container.appendChild(folderInput);
-
-  // helper to create size select options
-  function createSizeSelect(selected){
-    const sel = document.createElement('select');
-    for(const s of manifest.sizes){ const o = document.createElement('option'); o.value = s.size; o.textContent = s.size; if(String(s.size) === String(selected)) o.selected = true; sel.appendChild(o); }
-    return sel;
-  }
-
-  // add one row
   function addRow(prefill = {}) {
     const tr = document.createElement('tr');
-
-    // Thumb cell
-    const tdThumb = document.createElement('td');
-    const inputThumb = document.createElement('input'); inputThumb.type='file'; inputThumb.accept='image/*';
-    const thumbPreview = document.createElement('img'); thumbPreview.className='small-thumb'; thumbPreview.alt='thumb'; thumbPreview.style.display='none';
-    const thumbNote = document.createElement('div'); thumbNote.className='prefill-note'; thumbNote.style.display='none';
-    tdThumb.appendChild(inputThumb); tdThumb.appendChild(thumbPreview); tdThumb.appendChild(thumbNote);
-
+    const tdThumb = document.createElement('td'); const inputThumb = document.createElement('input'); inputThumb.type='file'; inputThumb.accept='image/*'; const thumbPreview = document.createElement('img'); thumbPreview.className='small-thumb'; thumbPreview.alt='thumb'; thumbPreview.style.display='none'; const thumbNote = document.createElement('div'); thumbNote.className='prefill-note'; thumbNote.style.display='none'; tdThumb.appendChild(inputThumb); tdThumb.appendChild(thumbPreview); tdThumb.appendChild(thumbNote);
     inputThumb.onchange = (e) => { const f = e.target.files && e.target.files[0]; if(f){ thumbPreview.src = URL.createObjectURL(f); thumbPreview.style.display='block'; thumbNote.style.display='none'; tr.__prefilledThumbFile = null; } else { thumbPreview.src = ''; thumbPreview.style.display='none'; } };
-
-    // Barcode cell
-    const tdBarcode = document.createElement('td');
-    const inputBarcode = document.createElement('input'); inputBarcode.type='text'; inputBarcode.placeholder='146888';
-    if(prefill.barcode) inputBarcode.value = prefill.barcode;
-    tdBarcode.appendChild(inputBarcode);
-
-    // Size cell
-    const tdSize = document.createElement('td');
-    const sizeSelect = createSizeSelect(prefill.size|| (manifest.sizes[0] && manifest.sizes[0].size));
-    tdSize.appendChild(sizeSelect);
-
-    // Details cell
-    const tdDetails = document.createElement('td');
-    const inputDetails = document.createElement('input'); inputDetails.type='file'; inputDetails.accept='image/*'; inputDetails.multiple = true;
-    const detailsPreviewWrap = document.createElement('div'); detailsPreviewWrap.style.display='flex'; detailsPreviewWrap.style.gap='6px'; detailsPreviewWrap.style.marginTop='6px';
-    const detailsNote = document.createElement('div'); detailsNote.className='prefill-note'; detailsNote.style.display='none';
-    tdDetails.appendChild(inputDetails); tdDetails.appendChild(detailsPreviewWrap); tdDetails.appendChild(detailsNote);
+    const tdBarcode = document.createElement('td'); const inputBarcode = document.createElement('input'); inputBarcode.type='text'; inputBarcode.placeholder='146888'; if(prefill.barcode) inputBarcode.value = prefill.barcode; tdBarcode.appendChild(inputBarcode);
+    const tdSize = document.createElement('td'); const sizeSelect = createSizeSelect(prefill.size|| (manifest.sizes[0] && manifest.sizes[0].size)); const newSizeInput = document.createElement('input'); newSizeInput.type='text'; newSizeInput.placeholder='Nhập size mới...'; newSizeInput.style.display='none'; newSizeInput.style.marginLeft='6px'; newSizeInput.style.minWidth='80px'; tdSize.appendChild(sizeSelect); tdSize.appendChild(newSizeInput);
+    sizeSelect.onchange = ()=>{ if(sizeSelect.value === '__new__'){ newSizeInput.style.display='inline-block'; newSizeInput.value = ''; newSizeInput.focus(); } else { newSizeInput.style.display='none'; } };
+    if(prefill.size && !manifestMap[String(prefill.size)]){ // unknown size -> auto select new and fill
+      sizeSelect.value='__new__'; newSizeInput.style.display='inline-block'; newSizeInput.value = prefill.size; }
+    const tdDetails = document.createElement('td'); const inputDetails = document.createElement('input'); inputDetails.type='file'; inputDetails.accept='image/*'; inputDetails.multiple = true; const detailsPreviewWrap = document.createElement('div'); detailsPreviewWrap.style.display='flex'; detailsPreviewWrap.style.gap='6px'; detailsPreviewWrap.style.marginTop='6px'; const detailsNote = document.createElement('div'); detailsNote.className='prefill-note'; detailsNote.style.display='none'; tdDetails.appendChild(inputDetails); tdDetails.appendChild(detailsPreviewWrap); tdDetails.appendChild(detailsNote);
     inputDetails.onchange = (e) => { detailsPreviewWrap.innerHTML = ''; const files = Array.from(e.target.files || []); for(const f of files){ const img = document.createElement('img'); img.src = URL.createObjectURL(f); img.className='small-thumb'; detailsPreviewWrap.appendChild(img); } tr.__prefilledFiles = null; detailsNote.style.display='none'; };
     if(prefill.detailFiles && prefill.detailFiles.length){ for(const f of prefill.detailFiles){ const img = document.createElement('img'); img.src = URL.createObjectURL(f); img.className='small-thumb'; detailsPreviewWrap.appendChild(img); } detailsNote.textContent = `Prefilled ${prefill.detailFiles.length} file(s)`; detailsNote.style.display='block'; tr.__prefilledFiles = prefill.detailFiles.slice(); }
-
-    // Action cell: remove only (global action used)
-    const tdAction = document.createElement('td');
-    const removeBtn = document.createElement('button'); removeBtn.className='btn'; removeBtn.textContent='Xóa'; removeBtn.style.marginLeft='6px';
-    removeBtn.onclick = ()=> tr.remove();
-    const actionWrap = document.createElement('div'); actionWrap.className='row-actions'; actionWrap.appendChild(removeBtn);
-    tdAction.appendChild(actionWrap);
-
-    tr.appendChild(tdThumb); tr.appendChild(tdBarcode); tr.appendChild(tdSize); tr.appendChild(tdDetails); tr.appendChild(tdAction);
-    tbody.appendChild(tr);
-
-    // store prefilled thumb if provided
+    const tdAction = document.createElement('td'); const removeBtn = document.createElement('button'); removeBtn.className='btn'; removeBtn.textContent='Xóa'; removeBtn.style.marginLeft='6px'; removeBtn.onclick = ()=> tr.remove(); const actionWrap = document.createElement('div'); actionWrap.className='row-actions'; actionWrap.appendChild(removeBtn); tdAction.appendChild(actionWrap);
+    tr.appendChild(tdThumb); tr.appendChild(tdBarcode); tr.appendChild(tdSize); tr.appendChild(tdDetails); tr.appendChild(tdAction); tbody.appendChild(tr);
     if(prefill.thumbFile){ thumbPreview.src = URL.createObjectURL(prefill.thumbFile); thumbPreview.style.display='block'; thumbNote.textContent = 'Prefilled thumb'; thumbNote.style.display='block'; tr.__prefilledThumbFile = prefill.thumbFile; }
-
-    // return useful handles
-    return { tr, inputThumb, thumbPreview, thumbNote, inputBarcode, sizeSelect, inputDetails, detailsPreviewWrap, detailsNote };
+    return { tr, inputThumb, thumbPreview, thumbNote, inputBarcode, sizeSelect, newSizeInput, inputDetails, detailsPreviewWrap, detailsNote };
   }
 
-  // DO NOT add initial row automatically
-  // addRow();
+  addRowBtn.onclick = ()=> addRow(); globalAction.onchange = ()=>{ const val = globalAction.value; const rows = Array.from(tbody.querySelectorAll('tr')); for(const r of rows){ const sel = r.querySelector('select'); if(sel) sel.value = val; } };
+  previewAllBtn.onclick = ()=>{ const rows = Array.from(tbody.querySelectorAll('tr')); const gallery = document.createElement('div'); for(const r of rows){ const bc = r.querySelector('input[type="text"]').value || '(no barcode)'; const size = r.querySelector('select').value || ''; const thumbImg = r.querySelector('.small-thumb') && r.querySelector('.small-thumb').src; const wrapper = document.createElement('div'); wrapper.style.marginBottom='8px'; const title = document.createElement('div'); title.textContent = `${size} — ${bc}`; wrapper.appendChild(title); if(thumbImg){ const img = document.createElement('img'); img.src = thumbImg; img.style.maxWidth='160px'; img.style.display='block'; img.style.marginTop='6px'; wrapper.appendChild(img); } gallery.appendChild(wrapper); } showModal('Preview rows', gallery); };
 
-  addRowBtn.onclick = ()=> addRow();
-
-  // globalAction.apply will be used automatically
-  // preview all: open modal with small gallery from all rows
-  previewAllBtn.onclick = ()=>{
-    const rows = Array.from(tbody.querySelectorAll('tr'));
-    const gallery = document.createElement('div');
-    for(const r of rows){ const bc = r.querySelector('input[type="text"]').value || '(no barcode)'; const size = r.querySelector('select').value || ''; const thumbImg = r.querySelector('.small-thumb') && r.querySelector('.small-thumb').src; const wrapper = document.createElement('div'); wrapper.style.marginBottom='8px'; const title = document.createElement('div'); title.textContent = `${size} — ${bc}`; wrapper.appendChild(title); if(thumbImg){ const img = document.createElement('img'); img.src = thumbImg; img.style.maxWidth='160px'; img.style.display='block'; img.style.marginTop='6px'; wrapper.appendChild(img); } gallery.appendChild(wrapper); }
-    showModal('Preview rows', gallery);
-  };
-
-  // uploadAllBtn: collect rows, validate, prepare groups and upload with globalAction
   uploadAllBtn.onclick = async ()=>{
     const key = promptAdminKeyIfNeeded(); if(!key){ alert('Hủy: cần ADMIN_KEY'); return; }
     const rows = Array.from(tbody.querySelectorAll('tr'));
     if(rows.length===0) return alert('Chưa có dòng nào để upload');
-
-    // collect row info
-    const rowInfos = rows.map(r=>{
-      const inputThumb = r.querySelector('input[type="file"]');
-      const barcode = (r.querySelector('input[type="text"]').value || '').trim();
-      const size = r.querySelector('select').value;
-      const inputDetails = r.querySelector('input[type="file"][multiple]');
-      return { tr:r, inputThumb, barcode, size, inputDetails };
-    });
-
-    // validate barcodes and details presence
-    for(const ri of rowInfos){
-      if(!ri.barcode) return alert('Vui lòng nhập barcode cho tất cả dòng (hoặc xóa dòng trống)');
-      let detailsFiles = Array.from(ri.inputDetails.files || []);
-      if(detailsFiles.length === 0 && ri.tr.__prefilledFiles && ri.tr.__prefilledFiles.length) detailsFiles = ri.tr.__prefilledFiles.slice();
-      if(detailsFiles.length === 0) return alert('Mỗi dòng cần ít nhất 1 ảnh detail');
-    }
-
-    // detect duplicates
-    const duplicates = rowInfos.filter(ri => manifestHas(ri.size, ri.barcode));
-    if(duplicates.length > 0){
-      const ga = globalAction.value;
-      const msg = `Found ${duplicates.length} existing barcode(s) in manifest.\nAction chosen: ${ga}.\n\nTiếp tục? (Hủy để chỉnh lại)`;
-      if(!confirm(msg)) return;
-    }
-
-    // prepare groups
+    const rowInfos = rows.map(r=>{ const inputThumb = r.querySelector('input[type="file"]'); const barcode = (r.querySelector('input[type="text"]').value || '').trim(); const sizeSel = r.querySelector('select'); const sizeVal = sizeSel.value; const newSizeInput = r.querySelector('input[type="text"]'); const inputDetails = r.querySelector('input[type="file"][multiple]'); return { tr:r, inputThumb, barcode, sizeSel, sizeVal, newSizeInput, inputDetails }; });
+    for(const ri of rowInfos){ if(!ri.barcode) return alert('Vui lòng nhập barcode cho tất cả dòng (hoặc xóa dòng trống)'); let detailsFiles = Array.from(ri.inputDetails.files || []); if(detailsFiles.length === 0 && ri.tr.__prefilledFiles && ri.tr.__prefilledFiles.length) detailsFiles = ri.tr.__prefilledFiles.slice(); if(detailsFiles.length === 0) return alert('Mỗi dòng cần ít nhất 1 ảnh detail'); }
+    const duplicates = rowInfos.filter(ri => manifestHas((ri.sizeVal==='__new__' ? (ri.newSizeInput && ri.newSizeInput.value) || '' : ri.sizeVal), ri.barcode)); if(duplicates.length > 0){ const ga = globalAction.value; const msg = `Found ${duplicates.length} existing barcode(s) in manifest.\nAction chosen: ${ga}.\n\nTiếp tục? (Hủy để chỉnh lại)`; if(!confirm(msg)) return; }
     const groups = [];
-    for(const ri of rowInfos){
-      let detailsFiles = Array.from(ri.inputDetails.files || []);
-      if(detailsFiles.length === 0 && ri.tr.__prefilledFiles && ri.tr.__prefilledFiles.length) detailsFiles = ri.tr.__prefilledFiles.slice();
-
-      // if exists and globalAction==='skip' -> skip
-      if(manifestHas(ri.size, ri.barcode) && globalAction.value === 'skip') continue;
-
-      const prepared = [];
-      // prepare thumb: if user provided thumb use it; otherwise check prefilled thumb; otherwise pick first detail
-      let thumbFile = null;
-      if(ri.inputThumb && ri.inputThumb.files && ri.inputThumb.files[0]) thumbFile = ri.inputThumb.files[0];
-      else if(ri.tr.__prefilledThumbFile) thumbFile = ri.tr.__prefilledThumbFile;
-      else if(detailsFiles.length>0) thumbFile = detailsFiles[0];
-
-      if(thumbFile){ const processed = await convertImageFileToJpeg(thumbFile); const thumb = new File([await processed.arrayBuffer()], 'thumb.jpeg', { type: 'image/jpeg' }); prepared.push({ file: thumb, remoteName: 'thumb.jpeg' }); }
-
-      for(const f of detailsFiles){ const p = await convertImageFileToJpeg(f); prepared.push({ file: p, remoteName: p.name }); }
-
-      groups.push({ size: ri.size, barcode: ri.barcode, prepared });
-    }
-
+    for(const ri of rowInfos){ let detailsFiles = Array.from(ri.inputDetails.files || []); if(detailsFiles.length === 0 && ri.tr.__prefilledFiles && ri.tr.__prefilledFiles.length) detailsFiles = ri.tr.__prefilledFiles.slice(); let effectiveSize = ri.sizeVal; if(effectiveSize === '__new__'){ effectiveSize = (ri.newSizeInput && ri.newSizeInput.value || '').trim(); if(!effectiveSize) return alert('Bạn đã chọn Thêm size mới nhưng chưa nhập tên size.'); }
+      if(manifestHas(effectiveSize, ri.barcode) && globalAction.value === 'skip') continue; const prepared = []; let thumbFile = null; if(ri.inputThumb && ri.inputThumb.files && ri.inputThumb.files[0]) thumbFile = ri.inputThumb.files[0]; else if(ri.tr.__prefilledThumbFile) thumbFile = ri.tr.__prefilledThumbFile; else if(detailsFiles.length>0) thumbFile = detailsFiles[0]; if(thumbFile){ const processed = await convertImageFileToJpeg(thumbFile); const thumb = new File([await processed.arrayBuffer()], 'thumb.jpeg', { type: 'image/jpeg' }); prepared.push({ file: thumb, remoteName: 'thumb.jpeg' }); } for(const f of detailsFiles){ const p = await convertImageFileToJpeg(f); prepared.push({ file: p, remoteName: p.name }); } groups.push({ size: effectiveSize, barcode: ri.barcode, prepared }); }
     if(groups.length === 0) return alert('Không có hàng để upload sau khi áp dụng skip rules');
-
-    try{
-      await uploadPreparedGroups(groups, key);
-
-      // add new sizes locally so tabs update immediately (will be refreshed from server next)
-      let added = false;
-      for(const g of groups){ if(!manifestMap[g.size]){ manifest.sizes.push({ size: String(g.size), barcodes: [] }); added = true; } }
+    try{ await uploadPreparedGroups(groups, key);
+      let added = false; for(const g of groups){ if(!manifestMap[g.size]){ manifest.sizes.push({ size: String(g.size), barcodes: [] }); added = true; } }
       if(added){ buildManifestMap(); buildTabs(); }
-
-      await fetchManifest();
-      alert('Upload tất cả rows hoàn tất');
-    } catch(e){ console.error(e); alert('Upload lỗi: ' + e.message); }
+      await fetchManifest(); alert('Upload tất cả rows hoàn tất'); } catch(e){ console.error(e); alert('Upload lỗi: ' + e.message); }
   };
 
-  // folder input handling: build groups from folder structure
   folderInput.onchange = async (e)=>{
     const files = Array.from(folderInput.files || []);
-    if(!files.length) return;
-    // parse shoes/<size>/<barcode>/*
-    const groupsMap = {};
+    if(!files.length) return; const groupsMap = {};
     for(const f of files){ const rel = f.webkitRelativePath || f.name; const parts = rel.split('/').filter(Boolean); let idx = 0; if(parts[0] && parts[0].toLowerCase()==='shoes') idx=1; if(parts.length-idx < 3) continue; const size = parts[idx].trim(); const barcode = parts[idx+1].trim(); const fname = parts.slice(idx+2).join('/'); if(!groupsMap[size]) groupsMap[size]={}; if(!groupsMap[size][barcode]) groupsMap[size][barcode]=[]; groupsMap[size][barcode].push({ file: f, relPath: fname }); }
-    // convert groupsMap to prefilled rows for user to review
     for(const size of Object.keys(groupsMap)){
       for(const barcode of Object.keys(groupsMap[size])){
-        const items = groupsMap[size][barcode];
-        const detailFiles = items.map(x=>x.file);
-        const t = items.find(x=>/thumb\./i.test(x.relPath));
-        const thumbFile = t ? t.file : (items[0] && items[0].file);
-        const rowObj = addRow({ barcode, size, detailFiles, thumbFile });
-        // add prefilled references on tr so upload uses them
-        rowObj.tr.__prefilledFiles = detailFiles.slice();
-        if(thumbFile) rowObj.tr.__prefilledThumbFile = thumbFile;
-        if(rowObj.detailsNote) { rowObj.detailsNote.textContent = `Prefilled ${detailFiles.length} file(s)`; rowObj.detailsNote.style.display='block'; }
+        const items = groupsMap[size][barcode]; const detailFiles = items.map(x=>x.file); const t = items.find(x=>/thumb\./i.test(x.relPath)); const thumbFile = t ? t.file : (items[0] && items[0].file);
+        const rowObj = addRow({ barcode, size, detailFiles, thumbFile }); rowObj.tr.__prefilledFiles = detailFiles.slice(); if(thumbFile) rowObj.tr.__prefilledThumbFile = thumbFile; if(rowObj.detailsNote) { rowObj.detailsNote.textContent = `Prefilled ${detailFiles.length} file(s)`; rowObj.detailsNote.style.display='block'; }
         if(rowObj.thumbNote && thumbFile){ rowObj.thumbNote.textContent = 'Prefilled thumb'; rowObj.thumbNote.style.display='block'; rowObj.thumbPreview.style.display='block'; }
+        // if size not in manifest, mark select as __new__ and set newSizeInput value
+        if(!manifestMap[size]){
+          rowObj.sizeSelect.value='__new__'; rowObj.newSizeInput.style.display='inline-block'; rowObj.newSizeInput.value = size;
+        }
       }
     }
   };
@@ -725,36 +272,16 @@ function renderAdd(){
   contentEl.appendChild(container);
 }
 
-/* renderAccording */
 function renderAccording(){ document.getElementById('selectActions') && (document.getElementById('selectActions').style.display='none'); selectedItems.clear(); if(activeTab==='all') renderAll(); else if(activeTab.startsWith('size:')) renderSize(activeTab.split(':')[1]); else if(activeTab==='add') renderAdd(); else if(activeTab==='select-delete') renderSelectDelete(); updateHeaderVisibility(); }
-
-/* search */
 searchInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') doSearch(); });
-function doSearch(){ const q = (searchInput.value||'').trim().toLowerCase(); if(!q){ alert('Nhập barcode để tìm'); return; } const matches = []; for(const s of manifest.sizes) for(const b of s.barcodes) if(String(b.code).toLowerCase().includes(q)) matches.push({ size: s.size, barcode: b }); if(matches.length===0){ alert('Không tìm thấy'); return; } let html = `<div>Found ${matches.length} kết quả</div>`; matches.forEach(m=> html += `<div style="margin-top:8px"><strong>${m.barcode.code}</strong> — ${m.size} <button class="btn" data-size="${m.size}" data-code="${m.barcode.code}">Xem</button></div>`); showModal('Kết quả tìm kiếm', html); modalBody.querySelectorAll('button[data-size]').forEach(btn=>btn.onclick = (ev)=> { const s = ev.target.dataset.size; const c = ev.target.dataset.code; document.getElementById('modalClose').click(); activeTab = 'size:'+s; setActiveButton(); renderSize(s); setTimeout(()=> { const cards = Array.from(document.querySelectorAll('.card')); const card = cards.find(cd => cd.textContent.includes(c)); if(card) card.scrollIntoView({behavior:'smooth', block:'center'}); }, 300); }); }
-
-/* share/merge (unchanged fallback behavior) */
-async function shareMultipleImages(size, barcodeObj){
-  try{
-    const encSize = encodeURIComponent(String(size).trim());
-    const encCode = encodeURIComponent(String(barcodeObj.code).trim());
-    const urls = (barcodeObj.images || []).map(f => `${WORKER_BASE}/${PREFIX}/${encSize}/${encCode}/${encodeURIComponent(f)}`);
-    const files = [];
-    for(const u of urls){ const r = await fetch(u, { mode: 'cors' }); if(!r.ok) throw new Error(`Fetch failed ${r.status} ${u}`); const blob = await r.blob(); const fname = decodeURIComponent(u.split('/').pop()); files.push(new File([blob], fname, { type: blob.type })); }
-    if(navigator.canShare && navigator.canShare({ files })){ await navigator.share({ files, title: 'Images ' + barcodeObj.code }); return; }
-    else { await mergeImagesAndOpen(urls, size, barcodeObj); }
-  } catch(err){ console.error('shareMultipleImages error', err); /* do not alert, fallback to merge */ try{ const encSize = encodeURIComponent(String(size).trim()); const encCode = encodeURIComponent(String(barcodeObj.code).trim()); const urls = (barcodeObj.images || []).map(f => `${WORKER_BASE}/${PREFIX}/${encSize}/${encCode}/${encodeURIComponent(f)}`); await mergeImagesAndOpen(urls, size, barcodeObj); } catch(e) { console.error('fallback merge failed', e); alert('Fallback cũng thất bại: ' + e.message); } }
-}
+function doSearch(){ const q = (searchInput.value||'').trim().toLowerCase(); if(!q){ alert('Nhập barcode để tìm'); return; } const matches = []; for(const s of manifest.sizes) for(const b of s.barcodes) if(String(b.code).toLowerCase().includes(q)) matches.push({ size: s.size, barcode: b }); if(matches.length===0){ alert('Không tìm thấy'); return; } let html = `<div>Found ${matches.length} kết quả</div>`; matches.forEach(m=> html += `<div style=\"margin-top:8px\"><strong>${m.barcode.code}</strong> — ${m.size} <button class=\"btn\" data-size=\"${m.size}\" data-code=\"${m.barcode.code}\">Xem</button></div>`); showModal('Kết quả tìm kiếm', html); modalBody.querySelectorAll('button[data-size]').forEach(btn=>btn.onclick = (ev)=> { const s = ev.target.dataset.size; const c = ev.target.dataset.code; document.getElementById('modalClose').click(); activeTab = 'size:'+s; setActiveButton(); renderSize(s); setTimeout(()=> { const cards = Array.from(document.querySelectorAll('.card')); const card = cards.find(cd => cd.textContent.includes(c)); if(card) card.scrollIntoView({behavior:'smooth', block:'center'}); }, 300); }); }
+async function shareMultipleImages(size, barcodeObj){ try{ const encSize = encodeURIComponent(String(size).trim()); const encCode = encodeURIComponent(String(barcodeObj.code).trim()); const urls = (barcodeObj.images || []).map(f => `${WORKER_BASE}/${PREFIX}/${encSize}/${encCode}/${encodeURIComponent(f)}`); const files = []; for(const u of urls){ const r = await fetch(u, { mode: 'cors' }); if(!r.ok) throw new Error(`Fetch failed ${r.status} ${u}`); const blob = await r.blob(); const fname = decodeURIComponent(u.split('/').pop()); files.push(new File([blob], fname, { type: blob.type })); } if(navigator.canShare && navigator.canShare({ files })){ await navigator.share({ files, title: 'Images ' + barcodeObj.code }); return; } else { await mergeImagesAndOpen(urls, size, barcodeObj); } } catch(err){ console.error('shareMultipleImages error', err); try{ const encSize = encodeURIComponent(String(size).trim()); const encCode = encodeURIComponent(String(barcodeObj.code).trim()); const urls = (barcodeObj.images || []).map(f => `${WORKER_BASE}/${PREFIX}/${encSize}/${encCode}/${encodeURIComponent(f)}`); await mergeImagesAndOpen(urls, size, barcodeObj); } catch(e) { console.error('fallback merge failed', e); alert('Fallback cũng thất bại: ' + e.message); } } }
 async function mergeImagesAndOpen(urls, size, barcodeObj){ try{ const bitmaps = []; for(const u of urls){ const r = await fetch(u, { mode: 'cors' }); if(!r.ok) throw new Error('Fetch failed ' + r.status + ' ' + u); const blob = await r.blob(); const bmp = await createImageBitmap(blob); bitmaps.push(bmp); } const gap = 8; const colHeights=[0,0], colMaxW=[0,0]; for(let i=0;i<bitmaps.length;i++){ const col=i%2; colMaxW[col]=Math.max(colMaxW[col], bitmaps[i].width); colHeights[col]+=bitmaps[i].height+gap; } const maxColWidth=900; const scale0 = colMaxW[0] ? Math.min(1, maxColWidth/colMaxW[0]) : 1; const scale1 = colMaxW[1] ? Math.min(1, maxColWidth/colMaxW[1]) : 1; const colW = Math.round(Math.max(colMaxW[0]*scale0, colMaxW[1]*scale1)); const canvasW = colW*2 + gap; const canvasH = Math.round(Math.max(colHeights[0]*scale0, colHeights[1]*scale1) || 400); const canvas = document.createElement('canvas'); canvas.width = canvasW; canvas.height = canvasH; const ctx = canvas.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvasW,canvasH); const y=[0,0]; for(let i=0;i<bitmaps.length;i++){ const bm=bitmaps[i]; const col=i%2; const scale = col===0?scale0:scale1; const drawW=Math.round(bm.width*scale); const drawH=Math.round(bm.height*scale); const x = col===0?0:colW+gap; ctx.drawImage(bm,0,0,bm.width,bm.height,x,y[col],drawW,drawH); y[col]+=drawH+gap; } const blob = await new Promise(res=>canvas.toBlob(res,'image/png',0.92)); const url = URL.createObjectURL(blob); const w = window.open(url,'_blank'); if(!w){ const a=document.createElement('a'); a.href = url; a.target='_blank'; document.body.appendChild(a); a.click(); a.remove(); } setTimeout(()=>URL.revokeObjectURL(url),60000); }catch(e){ console.error('mergeImagesAndOpen error', e); throw e; }
 }
-
-/* Refresh & Clear key handlers */
 refreshBtn.onclick = async ()=> { try{ const key = promptAdminKeyIfNeeded(); if(!key){ alert('Hủy: cần ADMIN_KEY'); return; } const r = await fetch(WORKER_BASE + '/refresh-manifest', { method:'POST', headers:{ 'x-api-key': key }}); if(!r.ok){ const t = await r.text().catch(()=>r.statusText); throw new Error('Refresh failed: ' + t); } await fetchManifest(); alert('Manifest rebuilt'); } catch(err){ console.error(err); alert('Refresh error: ' + err.message); } };
 clearKeyBtn.onclick = ()=> { setAdminKeySession(null); alert('Admin key đã xóa khỏi session'); };
-
-/* init */
 async function init(){ await fetchManifest(); updateHeaderVisibility(); }
 init();
-
 </script>
 </body>
 </html>
