@@ -1,619 +1,198 @@
 <!doctype html>
-<html lang="vi">
+<html>
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Gallery — Shoes (internal)</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Shoes Admin</title>
 <style>
-:root{--accent:#2b82c9;--header-bg:#e6f3ff}
-body{font-family:system-ui,Arial;margin:0;background:#f0f6fb;color:#072033}
-header{background:var(--header-bg);padding:12px 16px;box-shadow:0 2px 6px rgba(10,10,10,0.06);position:sticky;top:0;z-index:40}
-.top-row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-.brand{font-weight:700;color:var(--accent)}
-.controls-right{display:flex;gap:8px;align-items:center}
-.search-wrap{flex:1 1 420px;margin-left:12px;min-width:160px;max-width:calc(100% - 200px)}
-.search-input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);font-size:14px;box-sizing:border-box}
-.tabs{display:flex;gap:8px;overflow:auto;padding:8px;margin-top:8px}
-.tab{padding:8px 12px;border-radius:8px;background:#eaf6ff;border:1px solid #d6ecff;cursor:pointer;white-space:nowrap}
-.tab.active{background:var(--accent);color:white}
-main{padding:12px}
-.status{padding:8px 12px;color:#345}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
-.card{background:white;border-radius:8px;padding:8px;box-shadow:0 1px 4px rgba(12,15,30,0.06);text-align:center;display:flex;flex-direction:column;gap:8px;font-size:13px;position:relative}
-.card img{width:100%;height:110px;object-fit:cover;border-radius:6px;cursor:pointer}
-.checkbox-select{position:absolute;left:10px;top:10px;z-index:20;width:26px;height:26px;transform:scale(1.25);accent-color:var(--accent)}
-.actions-bar{display:flex;gap:8px;align-items:center;margin-bottom:8px}
-.btn{padding:6px 8px;border-radius:6px;border:1px solid #cbd5e1;background:transparent;cursor:pointer;font-size:13px}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;z-index:50;align-items:center;justify-content:center}
-.modal.open{display:flex}
-.modal-content{background:white;width:92%;height:86%;border-radius:12px;display:flex;flex-direction:column;overflow:auto}
-.modal-header{padding:10px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between}
-.modal-body{padding:10px;overflow:auto}
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.two-col img{width:100%;height:auto;border-radius:6px;display:block}
-@media(max-width:700px){.two-col{grid-template-columns:1fr}}
-.small{font-size:13px;color:#444}
-.muted{color:#666;font-size:13px}
-.section-title{margin:12px 0 8px;font-weight:600}
-.warn{color:#b00;font-weight:600}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;margin:0;padding:0}
+  header{display:flex;align-items:center;justify-content:space-between;padding:12px;background:#111;color:#fff}
+  .container{padding:12px}
+  .toolbar{display:flex;gap:8px;margin-bottom:12px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+  .card{background:#fff;border:1px solid #ddd;padding:6px;display:flex;flex-direction:column;gap:6px}
+  img.thumb{width:100%;height:140px;object-fit:cover;background:#f0f0f0}
+  .btn{background:#0b74de;color:#fff;border:none;padding:8px 12px;border-radius:5px;cursor:pointer}
+  .btn-danger{background:#c0392b}
+  .small{font-size:12px;color:#666}
+  #uploader{border:2px dashed #bbb;padding:12px;text-align:center}
+  #progress{margin-top:8px}
 </style>
 </head>
 <body>
 <header>
-  <div class="top-row">
-    <div style="display:flex;align-items:center;gap:10px">
-      <div class="brand">Shoes Gallery — Internal</div>
-      <div style="font-size:13px;color:#0b4d74">Quản lý nội bộ</div>
-    </div>
-
-    <div class="search-wrap">
-      <input id="searchInput" class="search-input" placeholder="Tìm theo barcode (VD: 146888) — Enter để tìm" />
-    </div>
-
-    <div class="controls-right">
-      <button id="refreshBtn" class="btn">Refresh manifest.json</button>
-    </div>
+  <div><strong>Shoes Admin</strong></div>
+  <div>
+    <button id="refreshBtn" class="btn">Refresh</button>
+    <button id="uploadTabBtn" class="btn">Thêm (Upload)</button>
   </div>
-
-  <div id="tabs" class="tabs"></div>
 </header>
 
-<main>
-  <div id="status" class="status">Đang tải manifest...</div>
-
-  <div id="selectActions" style="display:none;margin:8px 12px;">
-    <div class="actions-bar">
-      <div><strong>Chế độ chọn để xóa (vĩnh viễn trên R2):</strong></div>
-      <button id="deleteSelectedBtn" class="btn">Xóa đã chọn</button>
-      <div style="margin-left:12px;" class="muted">Lưu ý: hành động xóa là vĩnh viễn. Bạn sẽ nhập ADMIN_KEY mỗi lần thực hiện.</div>
-    </div>
-  </div>
-
-  <div id="content"></div>
-</main>
-
-<!-- modal -->
-<div id="modal" class="modal" role="dialog" aria-hidden="true">
-  <div class="modal-content">
-    <div class="modal-header">
-      <div><strong id="modalTitle"></strong></div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button id="modalClose" class="btn">Đóng</button>
+<div class="container">
+  <div id="uploadPanel" style="display:none">
+    <div id="uploader">
+      <input id="fileInput" type="file" multiple accept="image/*"><br>
+      <small class="small">Kéo thả hoặc chọn file (4-7 ảnh per barcode)</small>
+      <div style="margin-top:8px">
+        <input id="barcodeInput" placeholder="Barcode / Folder name" />
+        <label><input type="checkbox" id="overwriteChk" /> Ghi đè nếu trùng tên</label>
       </div>
+      <div id="progress"></div>
     </div>
-    <div class="modal-body" id="modalBody"></div>
   </div>
+
+  <div style="margin-bottom:12px">
+    <input id="search" placeholder="Search filename or barcode" />
+  </div>
+
+  <div id="gallery" class="grid"></div>
 </div>
 
 <script>
-/* CONFIG */
-const WORKER_BASE = "https://shoes-worker.lapproak0.workers.dev";
-const PREFIX = "Shoes";
+const WORKER_BASE = 'https://test.lapproak0.workers.dev'; // <- set this
+const ADMIN_KEY = '1'; // <- set this (keep safe)
+const concurrency = 4;
+const maxRetries = 3;
 
-/* DOM refs */
-const statusEl = document.getElementById('status');
-const tabsEl = document.getElementById('tabs');
-const contentEl = document.getElementById('content');
-const searchInput = document.getElementById('searchInput');
-const refreshBtn = document.getElementById('refreshBtn');
-const selectActions = document.getElementById('selectActions');
-const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
-const modal = document.getElementById('modal');
-const modalTitle = document.getElementById('modalTitle');
-const modalBody = document.getElementById('modalBody');
-const modalClose = document.getElementById('modalClose');
+document.getElementById('uploadTabBtn').addEventListener('click', ()=> {
+  const p = document.getElementById('uploadPanel');
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+});
+document.getElementById('refreshBtn').addEventListener('click', ()=> loadGallery());
+document.getElementById('fileInput').addEventListener('change', handleFiles);
+document.getElementById('search').addEventListener('input', evt => filterGallery(evt.target.value));
 
-/* state */
-let manifestRaw = null;
-let manifest = null;
-let trash = {};
-let activeTab = 'all'; // 'all', 'size:<size>', 'add', 'trash', 'select-delete'
-let selectedItems = new Set(); // store "size|barcode"
+let manifest = [];
 
-/* helpers */
-function logStatus(msg){ statusEl.textContent = msg; console.log(msg); }
-// prompt admin key each time (synchronous prompt)
-function promptAdminKeySync() {
-  const k = prompt('Nhập ADMIN_KEY (không lưu) — paste rồi Enter:');
-  if (!k) return null;
-  return k.trim();
+async function loadGallery() {
+  const res = await fetch(`${WORKER_BASE}/api/list`);
+  const data = await res.json();
+  manifest = data.items || [];
+  renderGallery(manifest);
 }
-
-/* manifest normalization (trim sizes and barcodes) */
-function normalizeManifest(raw) {
-  if (!raw) return { sizes: [] };
-  if (Array.isArray(raw)) return { sizes: raw };
-  if (raw.sizes && Array.isArray(raw.sizes)) {
-    return {
-      sizes: raw.sizes.map(s => ({
-        size: String(s.size || s.name || "").trim(),
-        barcodes: Array.isArray(s.barcodes)
-          ? s.barcodes.map(b => ({ code: String(b.code || "").trim(), images: Array.isArray(b.images) ? b.images.slice() : [] }))
-          : []
-      }))
-    };
-  }
-  const sizes = [];
-  for (const [k, v] of Object.entries(raw)) {
-    if (k === "meta" || k === "version") continue;
-    if (v && typeof v === "object" && !Array.isArray(v)) {
-      const barcodes = [];
-      for (const [code, imgs] of Object.entries(v)) {
-        if (Array.isArray(imgs)) barcodes.push({ code: String(code).trim(), images: imgs.slice() });
-      }
-      sizes.push({ size: String(k).trim(), barcodes });
-    }
-  }
-  sizes.sort((a,b)=> {
-    const ai = parseInt(a.size), bi = parseInt(b.size);
-    if (!isNaN(ai) && !isNaN(bi)) return ai - bi;
-    return a.size.localeCompare(b.size);
-  });
-  return { sizes };
-}
-
-/* Fetch manifest and trash */
-async function fetchManifestAndTrash({ forceRefresh = false } = {}) {
-  try {
-    logStatus('Loading manifest...');
-    if (forceRefresh) {
-      const key = promptAdminKeySync();
-      if (!key) { alert('Hủy: cần ADMIN_KEY'); return; }
-      const r = await fetch(WORKER_BASE + '/refresh-manifest', { method:'POST', headers: { 'x-api-key': key }});
-      if (!r.ok) { const t = await r.text().catch(()=>r.statusText); throw new Error('Refresh failed: ' + t); }
-      manifestRaw = await r.json();
-      // manifestRaw is returned by worker refresh as map
-    } else {
-      const r = await fetch(WORKER_BASE + '/manifest.json', { cache: 'no-store' });
-      if (!r.ok) { const t = await r.text().catch(()=>r.statusText); throw new Error('manifest fetch ' + r.status); }
-      manifestRaw = await r.json();
-    }
-    manifest = normalizeManifest(manifestRaw || {});
-    // trash
-    const tr = await fetch(WORKER_BASE + '/trash.json', { cache: 'no-store' });
-    trash = tr.ok ? await tr.json() : {};
-    logStatus('Loaded manifest (sizes: ' + manifest.sizes.length + ')');
-    buildTabs();
-  } catch (err) {
-    console.error(err);
-    logStatus('Không load được manifest: ' + err.message);
-    contentEl.innerHTML = '';
+function renderGallery(items) {
+  const g = document.getElementById('gallery');
+  g.innerHTML = '';
+  for (const it of items) {
+    const card = document.createElement('div'); card.className='card';
+    const img = document.createElement('img'); img.className='thumb';
+    img.src = it.thumb ? `${WORKER_BASE}/file/${encodeURIComponent(it.thumb)}` : `${WORKER_BASE}/file/${encodeURIComponent(it.key)}`;
+    img.loading = 'lazy';
+    const name = document.createElement('div'); name.textContent = it.filename;
+    const meta = document.createElement('div'); meta.className='small'; meta.textContent = it.barcode + ' • ' + new Date(it.uploadedAt).toLocaleString();
+    const actions = document.createElement('div');
+    const shareBtn = document.createElement('button'); shareBtn.className='btn'; shareBtn.textContent='Share';
+    shareBtn.onclick = ()=> { navigator.clipboard.writeText(`${WORKER_BASE}/file/${encodeURIComponent(it.key)}`).then(()=> alert('Link copied')); };
+    const delBtn = document.createElement('button'); delBtn.className='btn btn-danger'; delBtn.textContent='Delete';
+    delBtn.onclick = ()=> deleteItem(it.key);
+    actions.appendChild(shareBtn); actions.appendChild(delBtn);
+    card.appendChild(img); card.appendChild(name); card.appendChild(meta); card.appendChild(actions);
+    g.appendChild(card);
   }
 }
 
-/* Build tabs */
-function buildTabs(){
-  tabsEl.innerHTML = '';
-  const allBtn = createTabButton('Tất cả', 'all');
-  tabsEl.appendChild(allBtn);
-  for (const s of manifest.sizes) {
-    const btn = createTabButton(String(s.size), 'size:' + s.size);
-    tabsEl.appendChild(btn);
-  }
-  const addBtn = createTabButton('Thêm', 'add'); tabsEl.appendChild(addBtn);
-
-  const spacer = document.createElement('div'); spacer.style.flex='1'; tabsEl.appendChild(spacer);
-
-  const selectBtn = createTabButton('Chọn để xóa', 'select-delete'); tabsEl.appendChild(selectBtn);
-  const trashBtn = createTabButton('Đã xóa', 'trash'); tabsEl.appendChild(trashBtn);
-
-  // render active
-  if (activeTab === 'all') renderAll();
-  else if (activeTab.startsWith('size:')) renderSize(activeTab.split(':')[1]);
-  else if (activeTab === 'add') renderAdd();
-  else if (activeTab === 'trash') renderTrash();
-  else if (activeTab === 'select-delete') renderSelectDelete();
+function filterGallery(q) {
+  q = q.trim().toLowerCase();
+  if (!q) return renderGallery(manifest);
+  renderGallery(manifest.filter(item => (item.filename || '').toLowerCase().includes(q) || (item.barcode||'').toLowerCase().includes(q)));
 }
 
-function createTabButton(text, tabKey) {
-  const btn = document.createElement('button');
-  btn.className = 'tab' + (activeTab === tabKey ? ' active' : '');
-  btn.textContent = text;
-  btn.onclick = ()=> { activeTab = tabKey; setActiveButton(); renderAccording(); };
-  return btn;
-}
-function setActiveButton() {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  const label = activeTab === 'all' ? 'Tất cả' : activeTab.startsWith('size:') ? activeTab.split(':')[1] : activeTab === 'add' ? 'Thêm' : activeTab === 'trash' ? 'Đã xóa' : 'Chọn để xóa';
-  const btn = Array.from(document.querySelectorAll('.tab')).find(b => b.textContent === label);
-  if (btn) btn.classList.add('active');
-}
-function renderAccording(){
-  selectActions.style.display = 'none';
-  selectedItems.clear();
-  if (activeTab === 'all') renderAll();
-  else if (activeTab.startsWith('size:')) renderSize(activeTab.split(':')[1]);
-  else if (activeTab === 'add') renderAdd();
-  else if (activeTab === 'trash') renderTrash();
-  else if (activeTab === 'select-delete') renderSelectDelete();
+// handle file selection / upload
+async function handleFiles(e) {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+  const barcode = document.getElementById('barcodeInput').value.trim() || 'unknown';
+  const overwrite = document.getElementById('overwriteChk').checked;
+  // prepare tasks (create thumbnail for each)
+  const tasks = files.map(f => ({ file: f, barcode, filename: f.name }));
+  // process with concurrency
+  const queue = tasks.slice();
+  const workers = new Array(concurrency).fill(0).map(() => workerLoop(queue, overwrite));
+  await Promise.all(workers);
+  // after uploads, refresh
+  await loadGallery();
+  alert('Upload finished (or some failed — check console).');
 }
 
-/* Render helpers */
-function renderAll(){
-  contentEl.innerHTML = '';
-  for (const s of manifest.sizes) {
-    const h = document.createElement('div'); h.className='section-title'; h.textContent = 'Size ' + s.size;
-    contentEl.appendChild(h);
-    const grid = document.createElement('div'); grid.className='grid';
-    for (const bc of s.barcodes) grid.appendChild(makeCard(s.size, bc, false));
-    contentEl.appendChild(grid);
+async function workerLoop(queue, overwrite) {
+  while (queue.length) {
+    const task = queue.shift();
+    if (!task) break;
+    await uploadWithRetries(task, overwrite);
   }
 }
 
-function renderSize(sizeStr){
-  contentEl.innerHTML = '';
-  const s = manifest.sizes.find(x => String(x.size) === String(sizeStr));
-  if (!s) { contentEl.innerHTML = '<div class="muted">Không có size này</div>'; return; }
-  const grid = document.createElement('div'); grid.className='grid';
-  for (const bc of s.barcodes) grid.appendChild(makeCard(s.size, bc, false));
-  contentEl.appendChild(grid);
-}
-
-function makeCard(size, bc, withCheckbox = false) {
-  const card = document.createElement('div'); card.className='card';
-  if (withCheckbox) {
-    const cb = document.createElement('input'); cb.type='checkbox'; cb.className='checkbox-select';
-    const key = `${String(size).trim()}|${String(bc.code).trim()}`;
-    cb.checked = selectedItems.has(key);
-    cb.onchange = (e)=> {
-      if (e.target.checked) selectedItems.add(key); else selectedItems.delete(key);
-    };
-    card.appendChild(cb);
-  }
-
-  const thumbName = (Array.isArray(bc.images) && bc.images.find(x=>/thumb/i.test(x))) || (Array.isArray(bc.images) ? bc.images[0] : null) || 'thumb.jpeg';
-  const encSize = encodeURIComponent(String(size).trim());
-  const encCode = encodeURIComponent(String(bc.code).trim());
-  const src = `${WORKER_BASE}/${PREFIX}/${encSize}/${encCode}/${encodeURIComponent(thumbName)}`;
-  const img = document.createElement('img'); img.src = src; img.alt = bc.code;
-  img.onerror = ()=>{ img.style.opacity=0.6; img.style.objectFit='contain' };
-  img.onclick = ()=>openDetails(size, bc);
-  card.appendChild(img);
-
-  const row = document.createElement('div'); row.className='barcode-row';
-  const codeEl = document.createElement('div'); codeEl.textContent = `<${bc.code}>`; row.appendChild(codeEl);
-
-  const actions = document.createElement('div');
-  const viewBtn = document.createElement('button'); viewBtn.className='btn'; viewBtn.textContent='Xem';
-  viewBtn.onclick = ()=>openDetails(size, bc);
-  actions.appendChild(viewBtn);
-
-  // Share/Save button
-  const shareBtn = document.createElement('button'); shareBtn.className='btn'; shareBtn.textContent='Lưu/Share';
-  shareBtn.onclick = ()=> shareMultipleImages(size, bc);
-  actions.appendChild(shareBtn);
-
-  row.appendChild(actions);
-  card.appendChild(row);
-  return card;
-}
-
-function openDetails(size, bc) {
-  modalTitle.textContent = `Size ${size} — ${bc.code}`;
-  modalBody.innerHTML = '';
-  const imgs = bc.images || [];
-  const div = document.createElement('div'); div.className='two-col';
-  for (const fn of imgs) {
-    const im = document.createElement('img');
-    im.src = `${WORKER_BASE}/${PREFIX}/${encodeURIComponent(String(size).trim())}/${encodeURIComponent(String(bc.code).trim())}/${encodeURIComponent(fn)}`;
-    div.appendChild(im);
-  }
-  modalBody.appendChild(div);
-  modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
-}
-modalClose.onclick = ()=>{ modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); }
-modal.onclick = (e)=>{ if (e.target === modal) modalClose.click(); }
-
-/* Select-delete mode */
-function renderSelectDelete() {
-  contentEl.innerHTML = '';
-  selectActions.style.display = 'block';
-  selectedItems.clear();
-  for (const s of manifest.sizes) {
-    const h = document.createElement('div'); h.className='section-title'; h.textContent = 'Size ' + s.size;
-    contentEl.appendChild(h);
-    const grid = document.createElement('div'); grid.className='grid';
-    for (const bc of s.barcodes) grid.appendChild(makeCard(s.size, bc, true));
-    contentEl.appendChild(grid);
-  }
-}
-
-/* Delete selected items (single confirm, prompt key each time) */
-deleteSelectedBtn.onclick = async ()=> {
-  if (selectedItems.size === 0) return alert('Chưa chọn mục nào để xóa');
-  if (!confirm('Xóa các mục đã chọn? (Hành động sẽ xóa vĩnh viễn trên R2)')) return;
-  const key = promptAdminKeySync();
-  if (!key) { alert('Hủy thao tác: cần ADMIN_KEY'); return; }
-  const items = Array.from(selectedItems).map(s => {
-    const [size, barcode] = s.split('|');
-    return { size, barcode };
-  });
-  try {
-    const r = await fetch(WORKER_BASE + '/bulk-delete', {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json', 'x-api-key': key },
-      body: JSON.stringify({ items })
-    });
-    if (!r.ok) { const t = await r.text().catch(()=>r.statusText); throw new Error('Delete failed: ' + t); }
-    const j = await r.json();
-    alert('Xóa hoàn tất. deletedKeys: ' + (j.totalDeleted || 0));
-    await fetchManifestAndTrash();
-    activeTab = 'all'; renderAccording();
-  } catch (err) {
-    console.error(err); alert('Lỗi xóa: ' + err.message);
-  }
-};
-
-/* Trash view (soft-delete) */
-function renderTrash() {
-  contentEl.innerHTML = '';
-  const header = document.createElement('div'); header.className='section-title'; header.textContent = 'Đã xóa';
-  contentEl.appendChild(header);
-  let any = false;
-  for (const size of Object.keys(trash || {})) {
-    const sizeHeader = document.createElement('div'); sizeHeader.className='section-title'; sizeHeader.textContent = 'Size ' + size;
-    contentEl.appendChild(sizeHeader);
-    const container = document.createElement('div');
-    for (const barcode of Object.keys(trash[size] || {})) {
-      any = true;
-      const entry = trash[size][barcode];
-      const item = document.createElement('div'); item.className='card';
-      item.style.display='flex'; item.style.flexDirection='row'; item.style.alignItems='center'; item.style.gap='12px';
-      const thumb = entry.images && entry.images[0] ? `${WORKER_BASE}/${PREFIX}/${encodeURIComponent(String(size).trim())}/${encodeURIComponent(String(barcode).trim())}/${encodeURIComponent(entry.images[0])}` : '';
-      const img = document.createElement('img'); img.src = thumb; img.style.width='120px'; img.style.height='80px'; img.style.objectFit='cover';
-      const info = document.createElement('div'); info.style.flex='1';
-      info.innerHTML = `<div><strong>${barcode}</strong></div><div class="muted">Xóa: ${new Date(entry.deletedAt).toLocaleString()}</div><div class="small">ảnh: ${entry.images.length}</div>`;
-      const actions = document.createElement('div');
-      const restoreBtn = document.createElement('button'); restoreBtn.className='btn'; restoreBtn.textContent='Khôi phục';
-      restoreBtn.onclick = ()=>restoreFromTrash(size, barcode);
-      const permBtn = document.createElement('button'); permBtn.className='btn'; permBtn.textContent='Xóa vĩnh viễn';
-      permBtn.onclick = ()=>confirmPermanentDelete(size, barcode);
-      actions.appendChild(restoreBtn); actions.appendChild(permBtn);
-      item.appendChild(img); item.appendChild(info); item.appendChild(actions);
-      container.appendChild(item);
-    }
-    contentEl.appendChild(container);
-  }
-  if (!any) contentEl.innerHTML += '<div class="muted">Không có mục nào trong Đã xóa</div>';
-}
-
-async function restoreFromTrash(size, barcode) {
-  const key = promptAdminKeySync();
-  if (!key) { alert('Hủy: cần ADMIN_KEY'); return; }
-  try {
-    const r = await fetch(WORKER_BASE + '/restore', { method:'POST', headers: { 'Content-Type':'application/json', 'x-api-key': key }, body: JSON.stringify({ size, barcode })});
-    if (!r.ok) { const t = await r.text().catch(()=>r.statusText); throw new Error('Restore failed: ' + t); }
-    await fetchManifestAndTrash();
-    alert('Đã khôi phục ' + barcode);
-  } catch (err) { console.error(err); alert('Restore error: ' + err.message); }
-}
-
-function confirmPermanentDelete(size, barcode) {
-  if (!confirm(`Xóa vĩnh viễn ${barcode} (Size ${size}) ?`)) return;
-  permanentDelete(size, barcode);
-}
-async function permanentDelete(size, barcode) {
-  const key = promptAdminKeySync();
-  if (!key) { alert('Hủy: cần ADMIN_KEY'); return; }
-  try {
-    const r = await fetch(WORKER_BASE + '/permanent-delete', { method:'POST', headers: { 'Content-Type':'application/json', 'x-api-key': key }, body: JSON.stringify({ size, barcode })});
-    if (!r.ok) { const t = await r.text().catch(()=>r.statusText); throw new Error('Permanent delete failed: ' + t); }
-    await fetchManifestAndTrash();
-    alert('Đã xóa vĩnh viễn ' + barcode);
-  } catch (err) { console.error(err); alert('Error: ' + err.message); }
-}
-
-/* Add tab (upload) */
-function renderAdd() {
-  contentEl.innerHTML = '';
-  const box = document.createElement('div'); box.style.background='#fff'; box.style.padding='12px'; box.style.borderRadius='8px';
-  const sizes = manifest.sizes.map(s=>s.size);
-  const sizeSelect = document.createElement('select'); sizeSelect.style.margin='6px';
-  sizes.forEach(s=> { const o=document.createElement('option'); o.value=s; o.textContent=s; sizeSelect.appendChild(o); });
-  const newOpt = document.createElement('option'); newOpt.value='__new'; newOpt.textContent='--- Thêm size mới ---'; sizeSelect.appendChild(newOpt);
-  const newSizeInput = document.createElement('input'); newSizeInput.placeholder='Nhập size mới nếu chọn'; newSizeInput.style.display='none'; newSizeInput.style.marginLeft='8px';
-  sizeSelect.onchange = ()=>{ newSizeInput.style.display = sizeSelect.value === '__new' ? 'inline-block':'none'; };
-
-  const codeInput = document.createElement('input'); codeInput.type='text'; codeInput.placeholder='Barcode (146888)';
-  const thumbInput = document.createElement('input'); thumbInput.type='file'; thumbInput.accept='image/*';
-  const detailInput = document.createElement('input'); detailInput.type='file'; detailInput.accept='image/*'; detailInput.multiple = true;
-  const overwriteChkLabel = document.createElement('label'); overwriteChkLabel.innerHTML = '<input id="overwriteAdd" type="checkbox"> Ghi đè nếu tồn tại';
-
-  const btnPreview = document.createElement('button'); btnPreview.className='btn'; btnPreview.textContent='Xem ảnh';
-  const btnSave = document.createElement('button'); btnSave.className='btn'; btnSave.textContent='Upload';
-
-  btnPreview.onclick = ()=> {
-    const details = Array.from(detailInput.files || []);
-    const t = thumbInput.files && thumbInput.files[0];
-    const div = document.createElement('div');
-    if (t) { const im = document.createElement('img'); im.src = URL.createObjectURL(t); im.style.maxWidth='160px'; div.appendChild(im); }
-    details.forEach(f=> { const im=document.createElement('img'); im.src=URL.createObjectURL(f); im.style.maxWidth='120px'; im.style.margin='6px'; div.appendChild(im);});
-    modalTitle.textContent = 'Preview ảnh';
-    modalBody.innerHTML = ''; modalBody.appendChild(div); modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
-  };
-
-  btnSave.onclick = async ()=> {
-    const sizeVal = sizeSelect.value === '__new' ? (newSizeInput.value||'').trim() : sizeSelect.value;
-    const barcodeVal = (codeInput.value||'').trim();
-    if (!sizeVal) return alert('Chọn hoặc nhập size');
-    if (!barcodeVal) return alert('Nhập barcode');
-    const details = Array.from(detailInput.files || []);
-    if (details.length === 0) return alert('Chọn ít nhất 1 ảnh detail');
-
-    const overwrite = document.getElementById('overwriteAdd').checked;
-    const adminKey = promptAdminKeySync();
-    if (!adminKey) { alert('Hủy: cần ADMIN_KEY'); return; }
-
-    // if overwrite true => soft-delete previous first
-    if (overwrite) {
-      await fetch(WORKER_BASE + '/soft-delete', { method:'POST', headers:{ 'Content-Type':'application/json', 'x-api-key': adminKey }, body: JSON.stringify({ size: sizeVal, barcode: barcodeVal }) });
-    }
-
-    const fd = new FormData();
-    fd.append('size', sizeVal);
-    fd.append('barcode', barcodeVal);
-    const t = thumbInput.files && thumbInput.files[0]; if (t) fd.append('thumb', t, t.name);
-    for (let i=0;i<details.length;i++) fd.append('file'+i, details[i], details[i].name);
-
-    const r = await fetch(WORKER_BASE + '/upload', { method:'POST', headers: { 'x-api-key': adminKey }, body: fd });
-    if (!r.ok) { const ttxt = await r.text().catch(()=>r.statusText); throw new Error('Upload failed: ' + ttxt); }
-    await fetchManifestAndTrash();
-    alert('Upload xong: ' + barcodeVal);
-  };
-
-  const wrap = document.createElement('div');
-  wrap.appendChild(document.createTextNode('Size: ')); wrap.appendChild(sizeSelect); wrap.appendChild(newSizeInput);
-  wrap.appendChild(document.createElement('br'));
-  wrap.appendChild(document.createTextNode('Barcode: ')); wrap.appendChild(codeInput);
-  wrap.appendChild(document.createElement('br'));
-  wrap.appendChild(document.createTextNode('Thumbnail: ')); wrap.appendChild(thumbInput);
-  wrap.appendChild(document.createElement('br'));
-  wrap.appendChild(document.createTextNode('Detail images: ')); wrap.appendChild(detailInput);
-  wrap.appendChild(document.createElement('br'));
-  wrap.appendChild(overwriteChkLabel);
-  wrap.appendChild(document.createElement('br'));
-  wrap.appendChild(btnPreview); wrap.appendChild(btnSave);
-
-  box.appendChild(wrap); contentEl.appendChild(box);
-}
-
-/* Search */
-searchInput.addEventListener('keydown', (e)=>{ if (e.key === 'Enter') doSearch(); });
-function doSearch(){
-  const q = (searchInput.value||'').trim().toLowerCase();
-  if (!q) { alert('Nhập barcode để tìm'); return; }
-  const matches = [];
-  for (const s of manifest.sizes) {
-    for (const b of s.barcodes) {
-      if (String(b.code).toLowerCase().includes(q)) matches.push({ size: s.size, barcode: b });
-    }
-  }
-  if (matches.length === 0) { alert('Không tìm thấy'); return; }
-  let html = `<div>Found ${matches.length} kết quả</div>`;
-  matches.forEach(m => { html += `<div style="margin-top:8px"><strong>${m.barcode.code}</strong> — Size ${m.size} <button class="btn" data-size="${m.size}" data-code="${m.barcode.code}">Xem</button></div>`; });
-  modalTitle.textContent = 'Kết quả tìm kiếm';
-  modalBody.innerHTML = html; modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
-  modalBody.querySelectorAll('button[data-size]').forEach(btn=>btn.onclick = (ev)=> {
-    const s = ev.target.dataset.size; const c = ev.target.dataset.code;
-    modalClose.click();
-    activeTab = 'size:' + s; setActiveButton(); renderSize(s);
-    setTimeout(()=> {
-      const cards = Array.from(document.querySelectorAll('.card'));
-      const card = cards.find(cd => cd.textContent.includes(c));
-      if (card) card.scrollIntoView({behavior:'smooth', block:'center'});
-    }, 300);
-  });
-}
-
-/* ----- Share multiple images / fallback merge ----- */
-async function shareMultipleImages(size, barcodeObj) {
-  try {
-    const encSize = encodeURIComponent(String(size).trim());
-    const encCode = encodeURIComponent(String(barcodeObj.code).trim());
-    const urls = (barcodeObj.images || []).map(f => `${WORKER_BASE}/${PREFIX}/${encSize}/${encCode}/${encodeURIComponent(f)}`);
-
-    const files = [];
-    for (const u of urls) {
-      const r = await fetch(u, { mode: 'cors' });
-      if (!r.ok) throw new Error(`Fetch failed ${r.status} ${u}`);
-      const blob = await r.blob();
-      const fname = decodeURIComponent(u.split('/').pop());
-      files.push(new File([blob], fname, { type: blob.type }));
-    }
-
-    if (navigator.canShare && navigator.canShare({ files })) {
-      await navigator.share({ files, title: 'Images ' + barcodeObj.code });
-      return;
-    } else {
-      await mergeImagesAndOpen(urls, size, barcodeObj);
-    }
-  } catch (err) {
-    console.error('shareMultipleImages error', err);
-    alert('Không thể share nhiều ảnh trực tiếp: ' + err.message + '\nSẽ thử mở ảnh ghép để lưu thủ công.');
+async function uploadWithRetries(task, overwrite) {
+  for (let i=0;i<=maxRetries;i++) {
     try {
-      const encSize = encodeURIComponent(String(size).trim());
-      const encCode = encodeURIComponent(String(barcodeObj.code).trim());
-      const urls = (barcodeObj.images || []).map(f => `${WORKER_BASE}/${PREFIX}/${encSize}/${encCode}/${encodeURIComponent(f)}`);
-      await mergeImagesAndOpen(urls, size, barcodeObj);
-    } catch(e) {
-      console.error('fallback merge failed', e);
-      alert('Fallback cũng thất bại: ' + e.message);
+      await doUpload(task, overwrite);
+      return;
+    } catch (err) {
+      console.error('upload failed attempt', i, err);
+      if (i === maxRetries) {
+        console.error('final fail for', task.file.name, err);
+        break;
+      }
+      await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i))); // backoff
     }
   }
 }
 
-async function mergeImagesAndOpen(urls, size, barcodeObj) {
-  try {
-    const bitmaps = [];
-    for (const u of urls) {
-      const r = await fetch(u, { mode:'cors' });
-      if (!r.ok) throw new Error('Fetch failed ' + r.status + ' ' + u);
-      const blob = await r.blob();
-      const bmp = await createImageBitmap(blob);
-      bitmaps.push(bmp);
-    }
-    const gap = 8;
-    const colHeights = [0,0], colMaxW = [0,0];
-    for (let i=0;i<bitmaps.length;i++){
-      const col = i%2;
-      colMaxW[col] = Math.max(colMaxW[col], bitmaps[i].width);
-      colHeights[col] += bitmaps[i].height + gap;
-    }
-    const maxColWidth = 900;
-    const scale0 = colMaxW[0] ? Math.min(1, maxColWidth / colMaxW[0]) : 1;
-    const scale1 = colMaxW[1] ? Math.min(1, maxColWidth / colMaxW[1]) : 1;
-    const colW = Math.round(Math.max(colMaxW[0]*scale0, colMaxW[1]*scale1));
-    const canvasW = colW*2 + gap;
-    const canvasH = Math.round(Math.max(colHeights[0]*scale0, colHeights[1]*scale1) || 400);
-
-    const canvas = document.createElement('canvas');
-    canvas.width = canvasW; canvas.height = canvasH;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvasW,canvasH);
-
-    const y = [0,0];
-    for (let i=0;i<bitmaps.length;i++){
-      const bm = bitmaps[i];
-      const col = i%2;
-      const scale = col===0 ? scale0 : scale1;
-      const drawW = Math.round(bm.width * scale);
-      const drawH = Math.round(bm.height * scale);
-      const x = col === 0 ? 0 : colW + gap;
-      ctx.drawImage(bm, 0,0,bm.width,bm.height, x, y[col], drawW, drawH);
-      y[col] += drawH + gap;
-    }
-
-    const blob = await new Promise(res => canvas.toBlob(res, 'image/png', 0.92));
-    const url = URL.createObjectURL(blob);
-    const w = window.open(url, '_blank');
-    if (!w) { const a = document.createElement('a'); a.href = url; a.target = '_blank'; document.body.appendChild(a); a.click(); a.remove(); }
-    setTimeout(()=>URL.revokeObjectURL(url), 60000);
-  } catch (e) {
-    console.error('mergeImagesAndOpen error', e);
-    throw e;
+async function doUpload(task, overwrite) {
+  // Create thumbnail (300px width)
+  const thumbBlob = await createThumbnailBlob(task.file, 300);
+  const form = new FormData();
+  form.append('barcode', task.barcode);
+  form.append('filename', task.filename);
+  form.append('original', task.file, task.filename);
+  form.append('thumb', thumbBlob, 'thumb-'+task.filename);
+  // POST to worker
+  const resp = await fetch(`${WORKER_BASE}/api/upload`, {
+    method: 'POST',
+    headers: { 'x-admin-key': ADMIN_KEY },
+    body: form
+  });
+  if (!resp.ok) {
+    const txt = await resp.text();
+    throw new Error('Upload failed: ' + txt);
   }
+  return;
 }
 
-/* Refresh manifest button (prompt for key) */
-refreshBtn.onclick = async ()=> {
-  try {
-    const key = promptAdminKeySync();
-    if (!key) { alert('Hủy: cần ADMIN_KEY'); return; }
-    const r = await fetch(WORKER_BASE + '/refresh-manifest', { method:'POST', headers: { 'x-api-key': key }});
-    if (!r.ok) { const t = await r.text().catch(()=>r.statusText); throw new Error('Refresh failed: ' + t); }
-    await fetchManifestAndTrash();
-    alert('Manifest đã rebuild và tải lại');
-  } catch (err) {
-    console.error(err); alert('Refresh error: ' + err.message);
-  }
-};
-
-/* Init */
-async function init() {
-  await fetchManifestAndTrash();
+function createThumbnailBlob(file, targetWidth) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const ratio = img.height / img.width;
+      const w = targetWidth;
+      const h = Math.round(w * ratio);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      canvas.toBlob(blob => {
+        resolve(blob);
+      }, 'image/jpeg', 0.8);
+    };
+    img.onerror = reject;
+    const reader = new FileReader();
+    reader.onload = e => img.src = e.target.result;
+    reader.readAsDataURL(file);
+  });
 }
-init();
 
+async function deleteItem(key) {
+  if (!confirm('Xóa luôn file?')) return;
+  const resp = await fetch(`${WORKER_BASE}/api/delete`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json', 'x-admin-key': ADMIN_KEY},
+    body: JSON.stringify({ key })
+  });
+  if (!resp.ok) { alert('Delete failed'); return; }
+  await loadGallery();
+}
+
+loadGallery();
 </script>
 </body>
 </html>
