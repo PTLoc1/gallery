@@ -66,8 +66,8 @@ main{padding:10px}
 <header id="pageHeader">
   <div class="top-row">
     <div style="display:flex;align-items:center;gap:8px">
-      <div class="brand">Shoes Gallery — Internal</div>
-      <div style="font-size:13px;color:#0b4d74">Chỉ nhân viên</div>
+      <div class="brand">77 Store</div>
+      <div style="font-size:13px;color:#0b4d74">Staff only</div>
     </div>
 
     <div class="search-wrap">
@@ -75,7 +75,7 @@ main{padding:10px}
     </div>
 
     <div class="header-actions">
-      <button id="refreshBtn" class="btn">Refresh manifest.json</button>
+      <button id="refreshBtn" class="btn">Refresh</button>
       <button id="clearKeyBtn" class="clear-key" title="Xóa Admin Key trong session">Clear Key</button>
     </div>
   </div>
@@ -276,7 +276,7 @@ function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;
 
 /* open details */
 function openDetails(size, bc){
-  modalTitle.textContent = `Size ${size} — ${bc.code}`;
+  modalTitle.textContent = `${size} — ${bc.code}`;
   modalBody.innerHTML = '';
   const imgs = bc.images || [];
   const div = document.createElement('div'); div.className='two-col';
@@ -290,7 +290,7 @@ function openDetails(size, bc){
 }
 
 /* render lists */
-function renderAll(){ contentEl.innerHTML=''; for(const s of manifest.sizes){ const h=document.createElement('div'); h.className='section-title'; h.textContent='Size '+s.size; contentEl.appendChild(h); const grid=document.createElement('div'); grid.className='grid'; for(const bc of s.barcodes) grid.appendChild(makeCard(s.size, bc, false)); contentEl.appendChild(grid); } }
+function renderAll(){ contentEl.innerHTML=''; for(const s of manifest.sizes){ const h=document.createElement('div'); h.className='section-title'; h.textContent=s.size; contentEl.appendChild(h); const grid=document.createElement('div'); grid.className='grid'; for(const bc of s.barcodes) grid.appendChild(makeCard(s.size, bc, false)); contentEl.appendChild(grid); } }
 function renderSize(sizeStr){ contentEl.innerHTML=''; const s = manifest.sizes.find(x=>String(x.size)===String(sizeStr)); if(!s){ contentEl.innerHTML='<div class="muted">Không có size này</div>'; return; } const grid=document.createElement('div'); grid.className='grid'; for(const bc of s.barcodes) grid.appendChild(makeCard(s.size, bc, false)); contentEl.appendChild(grid); }
 function renderSelectDelete(){ contentEl.innerHTML=''; selectActions.style.display='block'; selectedItems.clear(); for(const s of manifest.sizes){ const h=document.createElement('div'); h.className='section-title'; h.textContent='Size '+s.size; contentEl.appendChild(h); const grid=document.createElement('div'); grid.className='grid'; for(const bc of s.barcodes) grid.appendChild(makeCard(s.size, bc, true)); contentEl.appendChild(grid); } }
 
@@ -530,6 +530,7 @@ init();
 </script>
 </body>
 </html>
+
 
 
 
