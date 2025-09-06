@@ -14,6 +14,7 @@
   --accent:#2b82c9;
   --header-bg:#e6f3ff;
   --tab-btn-color: #99ceff; /* requested */
+  --addtab-btn: #7FFFD4; /* Share button color */
   --gap:8px;
   --card-padding-mobile:6px;
   --card-font-mobile:12px;
@@ -25,6 +26,7 @@
 /* base */
 *{box-sizing:border-box}
 body{font-family:system-ui,Arial;margin:0;background:#f0f6fb;color:#072033}
+body.dark{ background:#111316; color:#d9dee3 }
 header{
   background:var(--header-bg);
   padding:10px 12px;
@@ -32,8 +34,10 @@ header{
   position:sticky;
   top:0;
   z-index:60;
-  transition: transform .28s ease, box-shadow .2s;
+  transition: transform .28s ease, box-shadow .2s, background .2s;
 }
+body.dark header{ background:#1a1f23 }
+body.dark .card{ background:#15181a }
 header.hidden { transform: translateY(-120%); box-shadow:none; }
 .top-row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .brand{font-weight:700;color:var(--accent);font-size:15px}
@@ -66,6 +70,8 @@ main{padding:10px}
   position:relative;
   align-items:stretch;
 }
+.card .thumb-wrap{ background:#f6f8fa }
+body.dark .card .thumb-wrap{ background:#222528 }
 
 /* square thumbnail */
 .thumb-wrap{
@@ -81,12 +87,15 @@ main{padding:10px}
 .checkbox-select{position:absolute;left:8px;top:8px;z-index:20;width:26px;height:26px;transform:scale(1.2);accent-color:var(--accent)}
 .actions-bar{display:flex;gap:8px;align-items:center;margin-bottom:8px}
 .btn{padding:6px 8px;border-radius:6px;border:1px solid #cbd5e1;background:transparent;cursor:pointer;font-size:13px}
+.btn.primary{ background:var(--accent); color:#fff; border-color:var(--accent) }
+.share-btn{ background:var(--addtab-btn); color:#000; border:1px solid rgba(0,0,0,0.08) }
 .small{font-size:13px;color:#444}
 .muted{color:#666;font-size:13px}
 .section-title{margin:10px 0 6px;font-weight:600;font-size:14px}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;z-index:80;align-items:center;justify-content:center}
 .modal.open{display:flex}
 .modal-content{background:white;width:92%;height:86%;border-radius:12px;display:flex;flex-direction:column;overflow:auto}
+body.dark .modal-content{ background:#0f1315; color:#e6e9eb }
 .modal-header{padding:10px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between}
 .modal-body{padding:10px;overflow:auto}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -173,6 +182,7 @@ main{padding:10px}
     </div>
 
     <div class="header-actions">
+      <button id="themeToggle" class="btn">Light/Dark</button>
       <button id="refreshBtn" class="btn">Refresh</button>
       <button id="clearKeyBtn" class="clear-key" title="Xóa Admin Key trong session">Clear Key</button>
     </div>
@@ -238,6 +248,7 @@ const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
 const modal = document.getElementById('modal');
 const modalTitle = document.getElementById('modalTitle');
 const modalBody = document.getElementById('modalBody');
+const themeToggle = document.getElementById('themeToggle');
 
 const progressPanel = document.getElementById('progressPanel');
 const groupsContainer = document.getElementById('groupsContainer');
@@ -255,6 +266,11 @@ let selectedItems = new Set();
 function getAdminKeySession(){ return sessionStorage.getItem('admin_key_v1') || null; }
 function setAdminKeySession(key){ if(!key) sessionStorage.removeItem('admin_key_v1'); else sessionStorage.setItem('admin_key_v1', key); }
 function promptAdminKeyIfNeeded(){ const existing = getAdminKeySession(); if(existing) return existing; const k = prompt('Nhập ADMIN_KEY (sẽ lưu trong session cho phiên này):'); if(!k) return null; const t=k.trim(); setAdminKeySession(t); return t; }
+
+/* theme */
+function applyTheme(isDark){ document.body.classList.toggle('dark', !!isDark); sessionStorage.setItem('dark_mode_v1', !!isDark); }
+themeToggle.onclick = ()=>{ const isDark = !document.body.classList.contains('dark'); applyTheme(isDark); };
+(function(){ const ds = sessionStorage.getItem('dark_mode_v1'); if(ds==='true') applyTheme(true); })();
 
 /* UX helpers */
 function logStatus(msg){ statusEl.textContent = msg; console.log(msg); }
@@ -328,13 +344,21 @@ function createTabButton(text, key){
     setActiveButton();
     renderAccording();
     updateHeaderVisibility();
-    // set body class for tab-open styles
-    document.body.classList.toggle('tab-open', activeTab !== 'all');
+    // set body class for tab-open styles (apply to all tabs including 'all')
+    document.body.classList.toggle('tab-open', true);
   };
   return btn;
 }
 function setActiveButton(){ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); const btn = document.querySelector(`.tab[data-key=\"${activeTab}\"]`); if(btn) btn.classList.add('active'); }
-function buildTabs(){ tabsEl.innerHTML = ''; tabsEl.appendChild(createTabButton('Tất cả','all')); for(const s of manifest.sizes) tabsEl.appendChild(createTabButton(String(s.size), 'size:'+s.size)); const spacer = document.createElement('div'); spacer.style.flex='1'; tabsEl.appendChild(spacer); tabsEl.appendChild(createTabButton('Thêm','add')); tabsEl.appendChild(createTabButton('Chọn để xóa','select-delete')); setActiveButton(); renderAccording(); }
+function buildTabs(){ tabsEl.innerHTML = ''; tabsEl.appendChild(createTabButton('Tất cả','all'));
+  for(const s of manifest.sizes) tabsEl.appendChild(createTabButton(String(s.size), 'size:'+s.size));
+  const spacer = document.createElement('div'); spacer.style.flex='1'; tabsEl.appendChild(spacer);
+  // add manual size button
+  const addSizeBtn = document.createElement('button'); addSizeBtn.className='tab'; addSizeBtn.textContent='Thêm size mới'; addSizeBtn.onclick = ()=>{ const nv = prompt('Nhập size mới (ví dụ 49):'); if(!nv) return; const v = String(nv).trim(); if(manifestMap[v]) return alert('Size đã tồn tại'); manifest.sizes.push({ size: v, barcodes: [] }); buildManifestMap(); buildTabs(); activeTab = 'size:'+v; setActiveButton(); renderAccording(); };
+  tabsEl.appendChild(addSizeBtn);
+  tabsEl.appendChild(createTabButton('Thêm','add'));
+  tabsEl.appendChild(createTabButton('Chọn để xóa','select-delete'));
+  setActiveButton(); renderAccording(); }
 
 /* header hide: only auto-hide on 'all' and 'size:*' and only when not at top */
 function updateHeaderVisibility(){ const shouldAutoHide = (activeTab==='all' || activeTab.startsWith('size:')); if(!shouldAutoHide){ headerEl.classList.remove('hidden'); return; } if(window.scrollY === 0) headerEl.classList.remove('hidden'); else headerEl.classList.add('hidden'); }
@@ -366,7 +390,7 @@ function makeCard(size, bc, withCheckbox=false){
   card.appendChild(wrap);
 
   const row = document.createElement('div'); row.style.display='flex'; row.style.justifyContent='center';
-  const shareBtn = document.createElement('button'); shareBtn.className='btn';
+  const shareBtn = document.createElement('button'); shareBtn.className='btn share-btn';
   shareBtn.innerHTML = `Share <span class="barcode-strong">${escapeHtml(String(bc.code))}</span>`;
   shareBtn.onclick = ()=> shareMultipleImages(size, bc);
   row.appendChild(shareBtn);
@@ -405,12 +429,14 @@ function showProgressPanel(){ progressPanel.classList.add('open'); progressPanel
 function hideProgressPanel(){ progressPanel.classList.remove('open'); progressPanel.setAttribute('aria-hidden','true'); }
 closeProgressBtn.onclick = ()=> hideProgressPanel();
 
-function updateOverallProgress(loaded, total){ const pct = total? Math.round(loaded/total*100) : 0; overallBar.style.width = pct + '%'; overallPercent.textContent = pct + '%'; }
+function scrollProgressToBottom(){ groupsContainer.scrollTop = groupsContainer.scrollHeight; }
 
-function createGroupProgress(groupId, label){ const row = document.createElement('div'); row.className = 'progress-row'; row.id = 'group-' + groupId; const lbl = document.createElement('div'); lbl.className = 'progress-label'; lbl.innerHTML = `<span>${escapeHtml(label)}</span><span class="group-percent">0%</span>`; const barBg = document.createElement('div'); barBg.className = 'progress-bar-bg'; const barFill = document.createElement('div'); barFill.className = 'progress-bar-fill'; barBg.appendChild(barFill); const fileList = document.createElement('div'); fileList.className = 'file-list'; row.appendChild(lbl); row.appendChild(barBg); row.appendChild(fileList); groupsContainer.appendChild(row); return { row, lbl, barFill, fileList }; }
-function addFileStatus(fileListEl, fname){ const div = document.createElement('div'); div.className = 'file-status-row'; div.innerHTML = `<div style="display:flex;justify-content:space-between"><div>${escapeHtml(fname)}</div><div class="file-status">0%</div></div><div class="progress-bar-bg" style="margin-top:6px"><div class="progress-bar-fill" style="width:0%"></div></div>`; fileListEl.appendChild(div); return { container: div, progressFill: div.querySelector('.progress-bar-fill'), statusEl: div.querySelector('.file-status') }; }
-function updateFileProgress(fileObj, loaded, total){ const pct = total ? Math.round(loaded/total*100) : 0; fileObj.progressFill.style.width = pct + '%'; fileObj.statusEl.textContent = pct + '%'; }
-function updateGroupProgress(groupEl, loaded, total){ const pct = total? Math.round(loaded/total*100) : 0; groupEl.barFill.style.width = pct + '%'; const percentEl = groupEl.row.querySelector('.group-percent'); if(percentEl) percentEl.textContent = pct + '%'; }
+function updateOverallProgress(loaded, total){ const pct = total? Math.round(loaded/total*100) : 0; overallBar.style.width = pct + '%'; overallPercent.textContent = pct + '%'; scrollProgressToBottom(); }
+
+function createGroupProgress(groupId, label){ const row = document.createElement('div'); row.className = 'progress-row'; row.id = 'group-' + groupId; const lbl = document.createElement('div'); lbl.className = 'progress-label'; lbl.innerHTML = `<span>${escapeHtml(label)}</span><span class="group-percent">0%</span>`; const barBg = document.createElement('div'); barBg.className = 'progress-bar-bg'; const barFill = document.createElement('div'); barFill.className = 'progress-bar-fill'; barBg.appendChild(barFill); const fileList = document.createElement('div'); fileList.className = 'file-list'; row.appendChild(lbl); row.appendChild(barBg); row.appendChild(fileList); groupsContainer.appendChild(row); scrollProgressToBottom(); return { row, lbl, barFill, fileList }; }
+function addFileStatus(fileListEl, fname){ const div = document.createElement('div'); div.className = 'file-status-row'; div.innerHTML = `<div style="display:flex;justify-content:space-between"><div>${escapeHtml(fname)}</div><div class="file-status">0%</div></div><div class="progress-bar-bg" style="margin-top:6px"><div class="progress-bar-fill" style="width:0%"></div></div>`; fileListEl.appendChild(div); scrollProgressToBottom(); return { container: div, progressFill: div.querySelector('.progress-bar-fill'), statusEl: div.querySelector('.file-status') }; }
+function updateFileProgress(fileObj, loaded, total){ const pct = total ? Math.round(loaded/total*100) : 0; fileObj.progressFill.style.width = pct + '%'; fileObj.statusEl.textContent = pct + '%'; scrollProgressToBottom(); }
+function updateGroupProgress(groupEl, loaded, total){ const pct = total? Math.round(loaded/total*100) : 0; groupEl.barFill.style.width = pct + '%'; const percentEl = groupEl.row.querySelector('.group-percent'); if(percentEl) percentEl.textContent = pct + '%'; scrollProgressToBottom(); }
 
 /* XHR upload with onprogress callback */
 function uploadFileWithProgress(url, file, onProgress){ return new Promise((resolve, reject) => { const xhr = new XMLHttpRequest(); xhr.open('PUT', url, true); if (file.type) xhr.setRequestHeader('Content-Type', file.type); xhr.upload.onprogress = (ev) => { if (ev.lengthComputable && typeof onProgress === 'function') onProgress(ev.loaded, ev.total); }; xhr.onload = () => { if (xhr.status >= 200 && xhr.status < 300) resolve({ ok:true, status: xhr.status, response: xhr.responseText }); else reject(new Error('Upload failed: ' + xhr.status + ' ' + xhr.statusText + ' - ' + xhr.responseText)); }; xhr.onerror = () => reject(new Error('Network error during upload')); xhr.send(file); }); }
@@ -423,6 +449,13 @@ async function uploadPreparedGroups(preparedGroups, adminKey){ let overallTotal 
 
   for(const [gi, g] of preparedGroups.entries()){
     const gid = `${g.size}|${g.barcode}|${gi}`;
+    // if size not in manifestMap, create temporary entry so UI updates
+    if(!manifestMap[g.size]){
+      manifest.sizes.push({ size: String(g.size), barcodes: [] });
+      buildManifestMap();
+      buildTabs();
+    }
+
     const groupEl = createGroupProgress(gid, `${g.size} — ${g.barcode}`);
     const groupTotal = g.prepared.reduce((s,p)=>s + p.file.size, 0);
     let groupLoaded = 0;
@@ -563,23 +596,13 @@ function renderAdd(){
     const detailsNote = document.createElement('div'); detailsNote.className='prefill-note'; detailsNote.style.display='none';
     tdDetails.appendChild(inputDetails); tdDetails.appendChild(detailsPreviewWrap); tdDetails.appendChild(detailsNote);
     inputDetails.onchange = (e) => { detailsPreviewWrap.innerHTML = ''; const files = Array.from(e.target.files || []); for(const f of files){ const img = document.createElement('img'); img.src = URL.createObjectURL(f); img.className='small-thumb'; detailsPreviewWrap.appendChild(img); } tr.__prefilledFiles = null; detailsNote.style.display='none'; };
-
     if(prefill.detailFiles && prefill.detailFiles.length){ for(const f of prefill.detailFiles){ const img = document.createElement('img'); img.src = URL.createObjectURL(f); img.className='small-thumb'; detailsPreviewWrap.appendChild(img); } detailsNote.textContent = `Prefilled ${prefill.detailFiles.length} file(s)`; detailsNote.style.display='block'; tr.__prefilledFiles = prefill.detailFiles.slice(); }
 
-    // Action cell: select skip/overwrite/upload + remove
+    // Action cell: remove only (global action used)
     const tdAction = document.createElement('td');
-    const actionSelect = document.createElement('select');
-    const optSkip = document.createElement('option'); optSkip.value='skip'; optSkip.textContent='Skip if exists';
-    const optOverwrite = document.createElement('option'); optOverwrite.value='overwrite'; optOverwrite.textContent='Overwrite if exists';
-    const optUpload = document.createElement('option'); optUpload.value='upload'; optUpload.textContent='Always upload';
-    actionSelect.appendChild(optSkip); actionSelect.appendChild(optOverwrite); actionSelect.appendChild(optUpload);
-    // default skip
-    actionSelect.value = 'skip';
-
     const removeBtn = document.createElement('button'); removeBtn.className='btn'; removeBtn.textContent='Xóa'; removeBtn.style.marginLeft='6px';
     removeBtn.onclick = ()=> tr.remove();
-
-    const actionWrap = document.createElement('div'); actionWrap.className='row-actions'; actionWrap.appendChild(actionSelect); actionWrap.appendChild(removeBtn);
+    const actionWrap = document.createElement('div'); actionWrap.className='row-actions'; actionWrap.appendChild(removeBtn);
     tdAction.appendChild(actionWrap);
 
     tr.appendChild(tdThumb); tr.appendChild(tdBarcode); tr.appendChild(tdSize); tr.appendChild(tdDetails); tr.appendChild(tdAction);
@@ -589,7 +612,7 @@ function renderAdd(){
     if(prefill.thumbFile){ thumbPreview.src = URL.createObjectURL(prefill.thumbFile); thumbPreview.style.display='block'; thumbNote.textContent = 'Prefilled thumb'; thumbNote.style.display='block'; tr.__prefilledThumbFile = prefill.thumbFile; }
 
     // return useful handles
-    return { tr, inputThumb, thumbPreview, thumbNote, inputBarcode, sizeSelect, inputDetails, detailsPreviewWrap, detailsNote, actionSelect };
+    return { tr, inputThumb, thumbPreview, thumbNote, inputBarcode, sizeSelect, inputDetails, detailsPreviewWrap, detailsNote };
   }
 
   // DO NOT add initial row automatically
@@ -597,13 +620,7 @@ function renderAdd(){
 
   addRowBtn.onclick = ()=> addRow();
 
-  // apply global action to all rows
-  globalAction.onchange = ()=>{
-    const val = globalAction.value;
-    const rows = Array.from(tbody.querySelectorAll('tr'));
-    for(const r of rows){ const sel = r.querySelector('select'); if(sel) sel.value = val; }
-  };
-
+  // globalAction.apply will be used automatically
   // preview all: open modal with small gallery from all rows
   previewAllBtn.onclick = ()=>{
     const rows = Array.from(tbody.querySelectorAll('tr'));
@@ -612,7 +629,7 @@ function renderAdd(){
     showModal('Preview rows', gallery);
   };
 
-  // uploadAllBtn: collect rows, validate, prepare groups and upload with skip/overwrite logic
+  // uploadAllBtn: collect rows, validate, prepare groups and upload with globalAction
   uploadAllBtn.onclick = async ()=>{
     const key = promptAdminKeyIfNeeded(); if(!key){ alert('Hủy: cần ADMIN_KEY'); return; }
     const rows = Array.from(tbody.querySelectorAll('tr'));
@@ -624,8 +641,7 @@ function renderAdd(){
       const barcode = (r.querySelector('input[type="text"]').value || '').trim();
       const size = r.querySelector('select').value;
       const inputDetails = r.querySelector('input[type="file"][multiple]');
-      const action = r.querySelector('select').value;
-      return { tr:r, inputThumb, barcode, size, inputDetails, action };
+      return { tr:r, inputThumb, barcode, size, inputDetails };
     });
 
     // validate barcodes and details presence
@@ -639,15 +655,8 @@ function renderAdd(){
     // detect duplicates
     const duplicates = rowInfos.filter(ri => manifestHas(ri.size, ri.barcode));
     if(duplicates.length > 0){
-      const countSkip = duplicates.filter(d=>d.action==='skip').length;
-      const countOverwrite = duplicates.filter(d=>d.action==='overwrite').length;
-      const countUpload = duplicates.filter(d=>d.action==='upload').length;
-      const msg = `Found ${duplicates.length} existing barcode(s) in manifest.
-`+
-                  `Action summary: Skip=${countSkip}, Overwrite=${countOverwrite}, Always upload=${countUpload}.
-
-`+
-                  `Tiếp tục? (Hủy để chỉnh lại)`;
+      const ga = globalAction.value;
+      const msg = `Found ${duplicates.length} existing barcode(s) in manifest.\nAction chosen: ${ga}.\n\nTiếp tục? (Hủy để chỉnh lại)`;
       if(!confirm(msg)) return;
     }
 
@@ -657,8 +666,8 @@ function renderAdd(){
       let detailsFiles = Array.from(ri.inputDetails.files || []);
       if(detailsFiles.length === 0 && ri.tr.__prefilledFiles && ri.tr.__prefilledFiles.length) detailsFiles = ri.tr.__prefilledFiles.slice();
 
-      // if exists and action==='skip' -> skip
-      if(manifestHas(ri.size, ri.barcode) && ri.action === 'skip') continue;
+      // if exists and globalAction==='skip' -> skip
+      if(manifestHas(ri.size, ri.barcode) && globalAction.value === 'skip') continue;
 
       const prepared = [];
       // prepare thumb: if user provided thumb use it; otherwise check prefilled thumb; otherwise pick first detail
@@ -678,6 +687,12 @@ function renderAdd(){
 
     try{
       await uploadPreparedGroups(groups, key);
+
+      // add new sizes locally so tabs update immediately (will be refreshed from server next)
+      let added = false;
+      for(const g of groups){ if(!manifestMap[g.size]){ manifest.sizes.push({ size: String(g.size), barcodes: [] }); added = true; } }
+      if(added){ buildManifestMap(); buildTabs(); }
+
       await fetchManifest();
       alert('Upload tất cả rows hoàn tất');
     } catch(e){ console.error(e); alert('Upload lỗi: ' + e.message); }
