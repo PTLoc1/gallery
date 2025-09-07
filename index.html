@@ -100,6 +100,13 @@ body.dark .modal-content{ background:#0f1315; color:#e6e9eb }
 .table-add { width:100%; min-width:900px; border-collapse:collapse; margin:6px 0; }
 .table-add th, .table-add td { border:1px solid #e6eef6; padding:6px; text-align:left; vertical-align:middle; font-size:13px; }
 .table-add th { background:#f7fbff; font-weight:600; }
+/* enforce columns widths to avoid layout jump */
+.table-add th:nth-child(1), .table-add td:nth-child(1) { width:90px; }
+.table-add th:nth-child(2), .table-add td:nth-child(2) { width:140px; }
+.table-add th:nth-child(3), .table-add td:nth-child(3) { width:120px; }
+.table-add th:nth-child(4), .table-add td:nth-child(4) { width:auto; }
+.table-add th:nth-child(5), .table-add td:nth-child(5) { width:120px; }
+
 .small-thumb { width:60px; height:60px; object-fit:cover; border-radius:6px; background:#fafafa; display:block; }
 .row-actions { display:flex; gap:6px; align-items:center; }
 
@@ -288,14 +295,14 @@ function setActiveButton(){ document.querySelectorAll('.tab').forEach(t=>t.class
 function buildTabs(){
   tabsEl.innerHTML = '';
   tabsEl.appendChild(createTabButton('Tất cả','all'));
-  for(const s of manifest.sizes) tabsEl.appendChild(createTabButton(String(s.size), 'size:'+s.size)); // <-- show only number, removed "Size " prefix
+  for(const s of manifest.sizes) tabsEl.appendChild(createTabButton(String(s.size), 'size:'+s.size)); // only number shown
   const spacer = document.createElement('div'); spacer.style.flex='1'; tabsEl.appendChild(spacer);
   tabsEl.appendChild(createTabButton('Thêm','add'));
   setActiveButton();
   renderAccording();
 }
 
-/* create card */
+/* create card - show checkbox if multiSelectMode true */
 function makeCard(size, bc, withCheckbox=false){
   const card = document.createElement('div'); card.className='card';
   if(withCheckbox || multiSelectMode){
@@ -352,21 +359,28 @@ function openDetails(size, bc){
 }
 
 /* render Actions bar
-   NOTE: removed the right-side red delete button here per request.
-   We only show floating delete button when multiSelectMode=true.
+   - For tab 'add' we DO NOT show the Chọn xóa toggle
+   - For other tabs we show the toggle which toggles multiSelectMode
 */
 function renderActionsBar(){
   const bar = document.createElement('div'); bar.className='actions-bar'; bar.style.justifyContent='space-between'; bar.style.marginBottom='10px';
   const left = document.createElement('div');
-  const toggleBtn = document.createElement('button'); toggleBtn.className='btn tab-like';
-  toggleBtn.textContent = multiSelectMode ? 'Hủy' : 'Chọn xóa';
-  toggleBtn.onclick = ()=>{ multiSelectMode = !multiSelectMode; if(!multiSelectMode) selectedItems.clear(); floatDelete.style.display = multiSelectMode ? 'block' : 'none'; renderAccording(); };
-  left.appendChild(toggleBtn);
+
+  // Only show toggle if NOT in 'add' tab
+  if(activeTab !== 'add'){
+    const toggleBtn = document.createElement('button'); toggleBtn.className='btn tab-like';
+    toggleBtn.textContent = multiSelectMode ? 'Hủy' : 'Chọn xóa';
+    toggleBtn.onclick = ()=>{ multiSelectMode = !multiSelectMode; if(!multiSelectMode) selectedItems.clear(); floatDelete.style.display = multiSelectMode ? 'block' : 'none'; renderAccording(); };
+    left.appendChild(toggleBtn);
+  } else {
+    // keep spacing consistent when in 'add' tab
+    const spacer = document.createElement('div'); spacer.style.height='1px'; spacer.style.display='inline-block'; left.appendChild(spacer);
+  }
+
   bar.appendChild(left);
 
-  // right intentionally left minimal (no delete button here)
+  // right intentionally minimal for add (no delete button here)
   const right = document.createElement('div'); right.style.display='flex'; right.style.gap='8px'; right.style.alignItems='center';
-  right.appendChild(document.createElement('div')); // placeholder
   bar.appendChild(right);
   return bar;
 }
@@ -394,7 +408,7 @@ function renderAll(){
   for(const s of manifest.sizes){
     const h=document.createElement('div'); h.className='section-title'; h.textContent = String(s.size); contentEl.appendChild(h);
     const grid=document.createElement('div'); grid.className='grid';
-    for(const bc of s.barcodes) grid.appendChild(makeCard(s.size, bc, false));
+    for(const bc of s.barcodes) grid.appendChild(makeCard(s.size, bc, false)); // checkbox only shows when multiSelectMode true
     contentEl.appendChild(grid);
   }
 }
@@ -408,7 +422,7 @@ function renderSize(sizeStr){
   contentEl.appendChild(grid);
 }
 
-/* RENDER ADD: keep original behavior but use CSS classes (so theme updates) */
+/* RENDER ADD: keep original behavior but tuned */
 function renderAdd(){
   contentEl.innerHTML = '';
   contentEl.appendChild(renderActionsBar());
@@ -426,7 +440,7 @@ function renderAdd(){
   controls.appendChild(left);
 
   const right = document.createElement('div'); right.style.display='flex'; right.style.gap='8px'; right.style.alignItems='center';
-  const previewAllBtn = document.createElement('button'); previewAllBtn.className='btn'; previewAllBtn.textContent='Preview all'; right.appendChild(previewAllBtn);
+  // previewAll removed per request
   controls.appendChild(right);
 
   container.appendChild(controls);
@@ -436,7 +450,7 @@ function renderAdd(){
   const thead = document.createElement('thead'); thead.innerHTML = `<tr><th>Thumb</th><th>Barcode</th><th>Size</th><th>Details</th><th>Action</th></tr>`; table.appendChild(thead);
   const tbody = document.createElement('tbody'); table.appendChild(tbody); tableWrap.appendChild(table); container.appendChild(tableWrap);
 
-  const folderLabel = document.createElement('div'); folderLabel.className='muted'; folderLabel.style.marginTop='8px'; folderLabel.textContent='Optional: chọn folder \"Shoes\" (desktop Chrome/Edge only)';
+  const folderLabel = document.createElement('div'); folderLabel.className='muted'; folderLabel.style.marginTop='8px'; folderLabel.textContent='Optional: chọn folder "Shoes" (desktop Chrome/Edge only)';
   const folderInput = document.createElement('input'); folderInput.type='file'; folderInput.webkitdirectory=true; folderInput.directory=true; folderInput.multiple=true; folderInput.style.display='block'; folderInput.style.marginTop='8px';
   container.appendChild(folderLabel); container.appendChild(folderInput);
 
@@ -463,7 +477,7 @@ function renderAdd(){
     inputDetails.onchange = (e) => { detailsPreviewWrap.innerHTML = ''; const files = Array.from(e.target.files || []); for(const f of files){ const img = document.createElement('img'); img.src = URL.createObjectURL(f); img.className='small-thumb'; detailsPreviewWrap.appendChild(img); } tr.__prefilledFiles = null; };
     if(prefill.detailFiles && prefill.detailFiles.length){ for(const f of prefill.detailFiles){ const img = document.createElement('img'); img.src = URL.createObjectURL(f); img.className='small-thumb'; detailsPreviewWrap.appendChild(img); } tr.__prefilledFiles = prefill.detailFiles.slice(); }
 
-    const tdAction = document.createElement('td'); const removeBtn = document.createElement('button'); removeBtn.className='btn'; removeBtn.textContent='Xóa dòng'; removeBtn.onclick = ()=> tr.remove(); const actionWrap = document.createElement('div'); actionWrap.className='row-actions'; actionWrap.appendChild(removeBtn); tdAction.appendChild(actionWrap);
+    const tdAction = document.createElement('td'); const removeBtn = document.createElement('button'); removeBtn.className='btn tab-like'; removeBtn.textContent='Xóa dòng'; removeBtn.onclick = ()=> tr.remove(); const actionWrap = document.createElement('div'); actionWrap.className='row-actions'; actionWrap.appendChild(removeBtn); tdAction.appendChild(actionWrap);
 
     tr.appendChild(tdThumb); tr.appendChild(tdBarcode); tr.appendChild(tdSize); tr.appendChild(tdDetails); tr.appendChild(tdAction); tbody.appendChild(tr);
 
@@ -472,8 +486,6 @@ function renderAdd(){
   }
 
   addRowBtn.onclick = ()=> addRow();
-  previewAllBtn.onclick = ()=>{ const rows = Array.from(tbody.querySelectorAll('tr')); const gallery = document.createElement('div'); for(const r of rows){ const bc = r.querySelector('input[type="text"]').value || '(no barcode)'; const size = r.querySelector('select').value || ''; const thumbImg = r.querySelector('.small-thumb') && r.querySelector('.small-thumb').src; const wrapper = document.createElement('div'); wrapper.style.marginBottom='8px'; const title = document.createElement('div'); title.textContent = `${size} — ${bc}`; wrapper.appendChild(title); if(thumbImg){ const img = document.createElement('img'); img.src = thumbImg; img.style.maxWidth='160px'; img.style.display='block'; img.style.marginTop='6px'; wrapper.appendChild(img); } gallery.appendChild(wrapper); } showModal('Preview rows', gallery); };
-
   uploadAllBtn.onclick = async ()=>{
     const key = promptAdminKeyIfNeeded(); if(!key){ alert('Hủy: cần ADMIN_KEY'); return; }
     const rows = Array.from(tbody.querySelectorAll('tr'));
@@ -596,13 +608,16 @@ async function shareMultipleImages(size, barcodeObj){
   }
 }
 
-/* --- upload & progress utilities (from your original file) --- */
+/* --- upload & progress utilities (kept) --- */
+
+/* existing helpers (uploadPreparedGroups, convertImageFileToJpeg, uploadFileWithProgress) assumed present here —
+   if you have different originals, keep them as before. Below functions are the same as previous version you used. */
 
 function showProgressPanel(){ progressPanel.classList.add('open'); progressPanel.setAttribute('aria-hidden','false'); }
 function hideProgressPanel(){ progressPanel.classList.remove('open'); progressPanel.setAttribute('aria-hidden','true'); }
 closeProgressBtn.onclick = ()=> hideProgressPanel();
 function scrollProgressToBottom(){ groupsContainer.scrollTop = groupsContainer.scrollHeight; }
-function updateOverallProgress(loaded, total){ const pct = total? Math.round(loaded/total*100) : 0; overallBar.style.width = pct + '%'; overallPercent.textContent = pct + '%'; scrollProgressToBottom(); }
+function updateOverallProgress(loaded, total){ const pct = total? Math.round(loaded/total*100) : 0; overallBar.style.width = pct + '%'; overallPercent.textContent = pct + '%'; groupsContainer.scrollTop = groupsContainer.scrollHeight; }
 function createGroupProgress(groupId, label){ const row = document.createElement('div'); row.className = 'progress-row'; row.id = 'group-' + groupId; const lbl = document.createElement('div'); lbl.className = 'progress-label'; lbl.innerHTML = `<span>${escapeHtml(label)}</span><span class="group-percent">0%</span>`; const barBg = document.createElement('div'); barBg.className = 'progress-bar-bg'; const barFill = document.createElement('div'); barFill.className = 'progress-bar-fill'; barBg.appendChild(barFill); const fileList = document.createElement('div'); fileList.className = 'file-list'; row.appendChild(lbl); row.appendChild(barBg); row.appendChild(fileList); groupsContainer.appendChild(row); scrollProgressToBottom(); return { row, lbl, barFill, fileList }; }
 function addFileStatus(fileListEl, fname){ const div = document.createElement('div'); div.className = 'file-status-row'; div.innerHTML = `<div style="display:flex;justify-content:space-between"><div>${escapeHtml(fname)}</div><div class="file-status">0%</div></div><div class="progress-bar-bg" style="margin-top:6px"><div class="progress-bar-fill" style="width:0%"></div></div>`; fileListEl.appendChild(div); scrollProgressToBottom(); return { container: div, progressFill: div.querySelector('.progress-bar-fill'), statusEl: div.querySelector('.file-status') }; }
 function updateFileProgress(fileObj, loaded, total){ const pct = total ? Math.round(loaded/total*100) : 0; fileObj.progressFill.style.width = pct + '%'; fileObj.statusEl.textContent = pct + '%'; scrollProgressToBottom(); }
