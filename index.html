@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>77Store - Gallery</title>
-<link id="dynamic-favicon" rel="icon" type="image/x-icon" href="">
+<link rel="icon" type="image/x-icon" href="./favicon.ico">
 <style>
 :root{
   --accent:#2b82c9;
@@ -23,7 +23,7 @@ html,body{height:100%}
 body{font-family:system-ui,Arial;margin:0;background:#f0f6fb;color:#072033; -webkit-font-smoothing:antialiased;}
 body.dark{ background:#111316; color:#d9dee3 }
 
-/* header (hidden brand by request) */
+/* header */
 header{
   padding:var(--header-padding) 12px calc(var(--header-padding) + env(safe-area-inset-bottom));
   background:var(--tab-bg);
@@ -38,6 +38,7 @@ body.dark header{ background:#122028 }
 
 .top-row{ display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
 .top-row > * { min-width:0 }
+/*.brand{font-weight:700;color:var(--accent);font-size:15px}*/
 
 .search-wrap{ flex:1 1 auto; margin-left:8px; min-width:0; max-width:calc(100% - 200px); }
 .search-input{ width:100%; padding:8px 10px; border-radius:8px; border:1px solid rgba(0,0,0,0.08); font-size:14px; min-width:0; }
@@ -127,7 +128,7 @@ img{ max-width:100%; display:block }
 <body>
 <header id="pageHeader">
   <div class="top-row">
-    <!-- brand removed per request -->
+    <div style="display:flex;align-items:center;gap:8px;flex:0 0 auto"><div class="brand">77Store - Gallery</div></div>
     <div class="search-wrap"><input id="searchInput" class="search-input" placeholder="Tìm theo barcode (VD: 146888) — Enter để tìm" /></div>
     <div class="controls" style="flex:0 0 auto">
       <button id="themeToggle" class="btn tab-like">Light/Dark</button>
@@ -172,7 +173,7 @@ img{ max-width:100%; display:block }
 const WORKER_BASE = "https://shoes-worker.lapproak0.workers.dev";
 const PREFIX = "Shoes";
 
-/* DOM refs */
+/* DOM */
 const statusEl = document.getElementById('status');
 const tabsEl = document.getElementById('tabs');
 const contentEl = document.getElementById('content');
@@ -201,20 +202,6 @@ let activeTab = 'all';
 let selectedItems = new Set();
 let multiSelectMode = false;
 
-/* favicon loader - try root then /Shoes/ */
-(async function loadFavicon(){
-  const link = document.getElementById('dynamic-favicon');
-  try{
-    let res = await fetch(WORKER_BASE + '/favicon.ico', { method:'HEAD' });
-    if(res && res.ok){ link.href = WORKER_BASE + '/favicon.ico'; return; }
-  }catch(e){}
-  try{
-    let res2 = await fetch(WORKER_BASE + '/' + PREFIX + '/favicon.ico', { method:'HEAD' });
-    if(res2 && res2.ok){ link.href = WORKER_BASE + '/' + PREFIX + '/favicon.ico'; return; }
-  }catch(e){}
-  // fallback: leave href empty (browser uses default)
-})();
-
 /* session admin key */
 function getAdminKeySession(){ return sessionStorage.getItem('admin_key_v1') || null; }
 function setAdminKeySession(key){ if(!key) sessionStorage.removeItem('admin_key_v1'); else sessionStorage.setItem('admin_key_v1', key); }
@@ -231,7 +218,7 @@ function showModal(title, htmlOrNode){ modalTitle.textContent = title; if(typeof
 document.getElementById('modalClose').onclick = ()=>{ modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); };
 modal.onclick = (e)=>{ if(e.target === modal) document.getElementById('modalClose').click(); };
 
-/* manifest normalization */
+/* manifest normalization: IGNORE keys that are not sizes */
 function normalizeManifest(raw){
   if(!raw) return { sizes: [] };
   if(Array.isArray(raw)) return { sizes: raw };
@@ -254,6 +241,7 @@ function normalizeManifest(raw){
   return { sizes };
 }
 
+/* manifest map */
 function buildManifestMap(){
   manifestMap = {};
   if(!manifest || !Array.isArray(manifest.sizes)) return;
@@ -281,6 +269,7 @@ async function fetchManifest({ forceRefresh=false }={}) {
     }
     manifest = normalizeManifest(manifestRaw || {});
     buildManifestMap();
+    // do not print sizes count per user's request
     logStatus('Manifest loaded');
     buildTabs();
   } catch(err){
@@ -314,7 +303,7 @@ function buildTabs(){
   renderAccording();
 }
 
-/* cards */
+/* card */
 function makeCard(size, bc, withCheckbox=false){
   const card = document.createElement('div'); card.className='card';
   if(withCheckbox || multiSelectMode){
@@ -339,6 +328,7 @@ function makeCard(size, bc, withCheckbox=false){
 
   const row = document.createElement('div'); row.style.display='flex'; row.style.justifyContent='center'; row.style.gap='8px';
   const shareBtn = document.createElement('button'); shareBtn.className='btn share-btn';
+  // icon + bold barcode only
   shareBtn.innerHTML = `
     <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' style='vertical-align:middle;'>
       <g fill='none' stroke='currentColor' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'>
@@ -365,9 +355,7 @@ function openDetails(size, bc){
     const imWrap = document.createElement('div');
     const im = document.createElement('img');
     im.src = `${WORKER_BASE}/${PREFIX}/${encodeURIComponent(String(size).trim())}/${encodeURIComponent(String(bc.code).trim())}/${encodeURIComponent(fn)}`;
-    im.style.width = '100%';
-    im.style.height = 'auto';
-    im.style.objectFit = 'cover';
+    im.style.width='100%'; im.style.height='auto'; im.style.objectFit='cover';
     imWrap.appendChild(im);
     div.appendChild(imWrap);
   }
@@ -448,23 +436,17 @@ async function performBulkDelete(){
     if(!r.ok) console.warn('refresh-manifest returned', r.status);
   } catch(e){ console.warn('refresh-manifest error', e); }
 
-  // fetch fresh manifest
+  // fetch fresh manifest (non-force)
   try { await fetchManifest(); } catch(e){ console.warn('fetchManifest after delete failed', e); }
 
-  // reset UI state (this ensures the toggle button reverts)
-  selectedItems.clear();
-  multiSelectMode = false;
-  updateBodyMultiselectClass();
-  floatDelete.style.display='none';
-  renderAccording(); // re-render to update action button text back to 'Chọn xóa'
-
+  selectedItems.clear(); multiSelectMode=false; updateBodyMultiselectClass(); floatDelete.style.display='none';
   alert('Xóa hoàn tất.');
 }
 
 /* floating delete */
 floatDeleteBtn.onclick = performBulkDelete;
 
-/* renderAll / renderSize / renderAdd */
+/* render functions (all/size/add) */
 function renderAll(){
   contentEl.innerHTML = '';
   contentEl.appendChild(renderActionsBar());
@@ -485,20 +467,19 @@ function renderSize(sizeStr){
   contentEl.appendChild(grid);
 }
 
-/* RENDER ADD: with requested label tweaks */
+/* RENDER ADD: full behaviour with requested tweaks */
 function renderAdd(){
   contentEl.innerHTML = '';
   contentEl.appendChild(renderActionsBar());
 
   const container = document.createElement('div');
-  container.style.padding = '12px';
-  container.style.borderRadius = '8px';
+  container.style.padding = '12px'; container.style.borderRadius = '8px';
 
   const controls = document.createElement('div'); controls.style.display='flex'; controls.style.justifyContent='space-between'; controls.style.alignItems='center';
   const left = document.createElement('div'); left.className='controls-left';
   const addRowBtn = document.createElement('button'); addRowBtn.className='btn tab-like'; addRowBtn.textContent = 'Thêm dòng'; left.appendChild(addRowBtn);
   const uploadAllBtn = document.createElement('button'); uploadAllBtn.className='btn tab-like'; uploadAllBtn.textContent = 'Upload'; left.appendChild(uploadAllBtn);
-  const globalAction = document.createElement('select'); const gOpt1 = document.createElement('option'); gOpt1.value='skip'; gOpt1.textContent='Skip if exists (mặc định)'; const gOpt2 = document.createElement('option'); gOpt2.value='overwrite'; gOpt2.textContent='Overwrite if exists'; const gOpt3 = document.createElement('option'); gOpt3.value='upload'; gOpt3.textContent='Always upload'; globalAction.appendChild(gOpt1); globalAction.appendChild(gOpt2); globalAction.appendChild(gOpt3); globalAction.style.marginLeft='10px'; left.appendChild(globalAction);
+  const globalAction = document.createElement('select'); const gOpt1 = document.createElement('option'); gOpt1.value='skip'; gOpt1.textContent='Skip if exists (Mặc định)'; const gOpt2 = document.createElement('option'); gOpt2.value='overwrite'; gOpt2.textContent='Overwrite if exists'; const gOpt3 = document.createElement('option'); gOpt3.value='upload'; gOpt3.textContent='Always upload'; globalAction.appendChild(gOpt1); globalAction.appendChild(gOpt2); globalAction.appendChild(gOpt3); globalAction.style.marginLeft='10px'; left.appendChild(globalAction);
   controls.appendChild(left);
 
   const right = document.createElement('div'); right.style.display='flex'; right.style.gap='8px'; right.style.alignItems='center';
@@ -548,15 +529,71 @@ function renderAdd(){
 
   addRowBtn.onclick = ()=> addRow();
 
-  uploadAllBtn.onclick = async ()=>{ /* kept original upload flow (Upload label changed earlier) */
-    // same upload logic as previous version (omitted here for brevity)
-    // call promptAdminKeyIfNeeded() etc.
-    alert('Upload triggered (thực hiện upload như trước).');
+  uploadAllBtn.onclick = async ()=>{
+    const key = promptAdminKeyIfNeeded(); if(!key){ alert('Hủy: cần ADMIN_KEY'); return; }
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    if(rows.length===0) return alert('Chưa có dòng nào để upload');
+
+    const rowInfos = rows.map(r=>{
+      const inputThumb = r.querySelector('td:nth-child(1) input[type="file"]');
+      const inputBarcode = r.querySelector('td:nth-child(2) input[type="text"]');
+      const sizeSelect = r.querySelector('td:nth-child(3) select');
+      const newSizeInput = r.querySelector('td:nth-child(3) input[type="text"]');
+      const inputDetails = r.querySelector('td:nth-child(4) input[type="file"][multiple]');
+      const barcode = (inputBarcode && inputBarcode.value || '').trim();
+      const sizeVal = sizeSelect ? sizeSelect.value : (newSizeInput ? newSizeInput.value : '');
+      return { tr:r, inputThumb, inputBarcode, barcode, sizeSelect, sizeVal, newSizeInput, inputDetails };
+    });
+
+    for(const ri of rowInfos){
+      if(!ri.barcode) return alert('Vui lòng nhập barcode cho tất cả dòng (hoặc xóa dòng trống)');
+      let detailsFiles = Array.from((ri.inputDetails && ri.inputDetails.files) || []);
+      if(detailsFiles.length === 0 && ri.tr.__prefilledFiles && ri.tr.__prefilledFiles.length) detailsFiles = ri.tr.__prefilledFiles.slice();
+      if(detailsFiles.length === 0) return alert('Mỗi dòng cần ít nhất 1 ảnh detail');
+    }
+
+    const duplicates = rowInfos.filter(ri => {
+      const effectiveSize = ri.sizeVal === '__new__' ? (ri.newSizeInput && ri.newSizeInput.value || '') : ri.sizeVal;
+      return manifestHas(effectiveSize, ri.barcode);
+    });
+    if(duplicates.length > 0){
+      const ga = globalAction ? globalAction.value : 'skip';
+      const msg = `Found ${duplicates.length} existing barcode(s) in manifest.\nAction chosen: ${ga}.\n\nTiếp tục? (Hủy để chỉnh lại)`;
+      if(!confirm(msg)) return;
+    }
+
+    const groups = [];
+    for(const ri of rowInfos){
+      let detailsFiles = Array.from((ri.inputDetails && ri.inputDetails.files) || []);
+      if(detailsFiles.length === 0 && ri.tr.__prefilledFiles && ri.tr.__prefilledFiles.length) detailsFiles = ri.tr.__prefilledFiles.slice();
+      let effectiveSize = ri.sizeVal;
+      if(effectiveSize === '__new__'){ effectiveSize = (ri.newSizeInput && ri.newSizeInput.value || '').trim(); if(!effectiveSize) return alert('Bạn đã chọn Thêm size mới nhưng chưa nhập tên size.'); }
+      if(manifestHas(effectiveSize, ri.barcode) && (globalAction && globalAction.value === 'skip')) continue;
+      const prepared = [];
+      let thumbFile = null;
+      if(ri.inputThumb && ri.inputThumb.files && ri.inputThumb.files[0]) thumbFile = ri.inputThumb.files[0];
+      else if(ri.tr.__prefilledThumbFile) thumbFile = ri.tr.__prefilledThumbFile;
+      else if(detailsFiles.length>0) thumbFile = detailsFiles[0];
+      if(thumbFile){ const processed = await convertImageFileToJpeg(thumbFile); const thumb = new File([await processed.arrayBuffer()], 'thumb.jpeg', { type: 'image/jpeg' }); prepared.push({ file: thumb, remoteName: 'thumb.jpeg' }); }
+      for(const f of detailsFiles){ const p = await convertImageFileToJpeg(f); prepared.push({ file: p, remoteName: p.name }); }
+      groups.push({ size: effectiveSize, barcode: ri.barcode, prepared });
+    }
+
+    if(groups.length === 0) return alert('Không có hàng để upload sau khi áp dụng skip rules');
+    try{
+      await uploadPreparedGroups(groups, key);
+      let added = false; for(const g of groups){ if(!manifestMap[g.size]){ manifest.sizes.push({ size: String(g.size), barcodes: [] }); added = true; } }
+      if(added){ buildManifestMap(); buildTabs(); }
+      await fetchManifest();
+      alert('Upload tất cả rows hoàn tất');
+    } catch(e){ console.error(e); alert('Upload lỗi: ' + e.message); }
   };
 
+  // folder input: validate top-level folder name is Shoes (if present)
   folderInput.onchange = async (e)=>{
     const files = Array.from(folderInput.files || []);
-    if(!files.length) return;
+    if(!files.length) return; // don't show message
+    // check if selected files include a top-level directory named 'Shoes' (case-insensitive)
     const sample = files[0].webkitRelativePath || files[0].name;
     const parts = sample.split('/').filter(Boolean);
     if(parts.length>0 && parts[0].toLowerCase() !== 'shoes'){
@@ -564,7 +601,7 @@ function renderAdd(){
       folderInput.value = '';
       return;
     }
-    // existing folder parsing logic (kept)
+
     const groupsMap = {};
     for(const f of files){
       const rel = f.webkitRelativePath || f.name;
@@ -598,11 +635,55 @@ function renderAdd(){
   contentEl.appendChild(container);
 }
 
-/* helper functions used earlier (escapeHtml, updateBodyMultiselectClass etc.) */
-function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+/* helper functions used by add tab upload */
+function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
 function updateBodyMultiselectClass(){ if(multiSelectMode) document.body.classList.add('body-multiselect'); else document.body.classList.remove('body-multiselect'); }
 
-/* share (kept) */
+/* UPLOAD utilities (presign + upload flow) */
+function uploadFileWithProgress(url, file, onProgress){ return new Promise((resolve, reject) => { const xhr = new XMLHttpRequest(); xhr.open('PUT', url, true); try { xhr.setRequestHeader('Content-Type', file.type); } catch(e){} xhr.upload.onprogress = (ev) => { if (ev.lengthComputable && typeof onProgress === 'function') onProgress(ev.loaded, ev.total); }; xhr.onload = () => { if (xhr.status >= 200 && xhr.status < 300) resolve({ ok:true, status: xhr.status, response: xhr.responseText }); else reject(new Error('Upload failed: ' + xhr.status + ' ' + xhr.statusText + ' - ' + xhr.responseText)); }; xhr.onerror = () => reject(new Error('Network error during upload')); xhr.send(file); }); }
+
+async function convertImageFileToJpeg(file, maxWidth=1600, quality=0.80){ if(!file.type || !file.type.startsWith('image/')) return file; try{ const imgBitmap = await createImageBitmap(file); const scale = imgBitmap.width > maxWidth ? maxWidth / imgBitmap.width : 1; const w = Math.round(imgBitmap.width * scale); const h = Math.round(imgBitmap.height * scale); const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(imgBitmap, 0, 0, w, h); const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', quality)); const newName = (file.name.replace(/\.[^/.]+$/, '') || 'image') + '.jpeg'; return new File([blob], newName, { type: 'image/jpeg' }); } catch(e){ console.warn('convertImageFileToJpeg failed', e); return file; } }
+
+async function uploadPreparedGroups(preparedGroups, adminKey){
+  let overallTotal = 0; for(const g of preparedGroups) for(const p of g.prepared) overallTotal += p.file.size;
+  let overallLoaded = 0;
+  showProgressPanel(); groupsContainer.innerHTML = ''; updateOverallProgress(0, overallTotal);
+
+  for(const [gi, g] of preparedGroups.entries()){
+    const gid = `${g.size}|${g.barcode}|${gi}`;
+    if(!manifestMap[g.size]){ manifest.sizes.push({ size: String(g.size), barcodes: [] }); buildManifestMap(); buildTabs(); }
+    const groupEl = createGroupProgress(gid, `${g.size} — ${g.barcode}`);
+    const groupTotal = g.prepared.reduce((s,p)=>s + p.file.size, 0);
+    let groupLoaded = 0;
+    const fileObjs = [];
+    for(const p of g.prepared) fileObjs.push(addFileStatus(groupEl.fileList, p.remoteName));
+    const filenames = g.prepared.map(p=>p.remoteName);
+    const presignRes = await fetch(WORKER_BASE + '/presign-upload', { method:'POST', headers:{ 'Content-Type':'application/json', 'x-api-key': adminKey }, body: JSON.stringify({ size: g.size, barcode: g.barcode, files: filenames, expiresIn: 3600 })});
+    if(!presignRes.ok){ const t = await presignRes.text().catch(()=>presignRes.statusText); throw new Error('Presign failed: ' + t); }
+    const presignJson = await presignRes.json(); const urls = presignJson.urls || {};
+    for(let i=0;i<g.prepared.length;i++){
+      const p = g.prepared[i]; const fileObj = fileObjs[i]; const url = urls[p.remoteName]; if(!url) throw new Error('Missing presigned URL for ' + p.remoteName);
+      try{ await uploadFileWithProgress(url, p.file, (loaded, total)=>{ updateFileProgress(fileObj, loaded, total); const groupEstimate = groupLoaded + loaded; updateGroupProgress(groupEl, Math.min(groupEstimate, groupTotal), groupTotal); updateOverallProgress(overallLoaded + loaded, overallTotal); }); updateFileProgress(fileObj, p.file.size, p.file.size); groupLoaded += p.file.size; overallLoaded += p.file.size; updateGroupProgress(groupEl, groupLoaded, groupTotal); updateOverallProgress(overallLoaded, overallTotal); fileObj.statusEl.textContent = 'OK'; } catch(e){ fileObj.statusEl.textContent = 'ERR'; console.error('Upload file error', e); throw e; }
+    }
+    const complete = await fetch(WORKER_BASE + '/complete-upload', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ size: g.size, barcode: g.barcode })});
+    if(!complete.ok){ const t = await complete.text().catch(()=>complete.statusText); throw new Error('Complete-upload failed: ' + t); }
+  }
+
+  updateOverallProgress(overallLoaded, overallTotal);
+}
+
+/* render helpers & search */
+function renderAccording(){ updateBodyMultiselectClass(); if(activeTab==='all') renderAll(); else if(activeTab.startsWith('size:')) renderSize(activeTab.split(':')[1]); else if(activeTab==='add') renderAdd(); }
+
+searchInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') doSearch(); });
+function doSearch(){ const q = (searchInput.value||'').trim().toLowerCase(); if(!q){ alert('Nhập barcode để tìm'); return; } const matches = []; for(const s of manifest.sizes) for(const b of s.barcodes) if(String(b.code).toLowerCase().includes(q)) matches.push({ size: s.size, barcode: b }); if(matches.length===0){ alert('Không tìm thấy'); return; } const first = matches[0]; activeTab = 'size:' + first.size; document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); const tb = Array.from(document.querySelectorAll('.tab')).find(t=>t.textContent.includes(first.size)); if(tb) tb.classList.add('active'); renderAccording(); setTimeout(()=>{ const cards = Array.from(document.querySelectorAll('.card img')); for(const img of cards){ if(img.alt === first.barcode.code){ img.scrollIntoView({behavior:'smooth', block:'center'}); break; } } }, 300); }
+
+/* refresh & clear key */
+refreshBtn.onclick = async ()=> { try{ const key = promptAdminKeyIfNeeded(); if(!key){ alert('Hủy: cần ADMIN_KEY'); return; } const r = await fetch(WORKER_BASE + '/refresh-manifest', { method:'POST', headers:{ 'x-api-key': key }}); if(!r.ok){ const t = await r.text().catch(()=>r.statusText); throw new Error('Refresh failed: ' + t); } await fetchManifest(); alert('Manifest rebuilt'); } catch(err){ console.error(err); alert('Refresh error: ' + err.message); } };
+clearKeyBtn.onclick = ()=> { setAdminKeySession(null); alert('Admin key đã xóa khỏi session'); };
+
+/* share single card */
 async function shareMultipleImages(size, barcodeObj){
   try{
     showModal('Chuẩn bị chia sẻ', '<div id="prepareMsg">Đang lấy ảnh, vui lòng chờ…</div>');
@@ -617,10 +698,7 @@ async function shareMultipleImages(size, barcodeObj){
         const blob = await r.blob();
         const fname = decodeURIComponent(u.split('/').pop());
         files.push(new File([blob], fname, { type: blob.type }));
-      } catch(e){
-        console.warn('fetch error', e, u);
-        continue;
-      }
+      } catch(e){ console.warn('fetch error', e, u); continue; }
     }
     document.getElementById('modalClose').click();
     if(files.length === 0) return alert('Không thu thập được file nào để chia sẻ');
@@ -629,26 +707,12 @@ async function shareMultipleImages(size, barcodeObj){
         await navigator.share({ files, title: 'Images ' + barcodeObj.code });
         return;
       }
-    } catch(err){
-      console.warn('navigator.share failed:', err);
-    }
+    } catch(err){ console.warn('navigator.share failed:', err); }
     const el = document.createElement('div');
     for(const f of files){ const img = document.createElement('img'); img.src = URL.createObjectURL(f); img.style.maxWidth='100%'; img.style.marginBottom='8px'; el.appendChild(img); }
     showModal('Ảnh để lưu thủ công', el);
-  } catch(err){
-    console.error('shareMultipleImages error', err);
-    try { document.getElementById('modalClose').click(); } catch(e){}
-    alert('Lỗi khi chia sẻ: ' + (err.message || err));
-  }
+  } catch(err){ console.error('shareMultipleImages error', err); try { document.getElementById('modalClose').click(); } catch(e){} alert('Lỗi khi chia sẻ: ' + (err.message || err)); }
 }
-
-/* search */
-searchInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') doSearch(); });
-function doSearch(){ const q = (searchInput.value||'').trim().toLowerCase(); if(!q){ alert('Nhập barcode để tìm'); return; } const matches = []; for(const s of manifest.sizes) for(const b of s.barcodes) if(String(b.code).toLowerCase().includes(q)) matches.push({ size: s.size, barcode: b }); if(matches.length===0){ alert('Không tìm thấy'); return; } const first = matches[0]; activeTab = 'size:' + first.size; document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); const tb = Array.from(document.querySelectorAll('.tab')).find(t=>t.textContent.includes(first.size)); if(tb) tb.classList.add('active'); renderAccording(); setTimeout(()=>{ const cards = Array.from(document.querySelectorAll('.card img')); for(const img of cards){ if(img.alt === first.barcode.code){ img.scrollIntoView({behavior:'smooth', block:'center'}); break; } } }, 300); }
-
-/* refresh & clear key */
-refreshBtn.onclick = async ()=> { try{ const key = promptAdminKeyIfNeeded(); if(!key){ alert('Hủy: cần ADMIN_KEY'); return; } const r = await fetch(WORKER_BASE + '/refresh-manifest', { method:'POST', headers:{ 'x-api-key': key }}); if(!r.ok){ const t = await r.text().catch(()=>r.statusText); throw new Error('Refresh failed: ' + t); } await fetchManifest(); alert('Manifest rebuilt'); } catch(err){ console.error(err); alert('Refresh error: ' + err.message); } };
-clearKeyBtn.onclick = ()=> { setAdminKeySession(null); alert('Admin key đã xóa khỏi session'); };
 
 /* header hide/show: header shown only when at very top */
 const headerEl = document.getElementById('pageHeader');
