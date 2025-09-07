@@ -439,7 +439,7 @@ async function performBulkDelete(){
   // fetch fresh manifest (non-force)
   try { await fetchManifest(); } catch(e){ console.warn('fetchManifest after delete failed', e); }
 
-  selectedItems.clear(); multiSelectMode=false; updateBodyMultiselectClass(); floatDelete.style.display='none';
+  selectedItems.clear(); multiSelectMode=false; updateBodyMultiselectClass(); floatDelete.style.display='none'; renderAccording();
   alert('Xóa hoàn tất.');
 }
 
