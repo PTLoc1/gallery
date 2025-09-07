@@ -11,12 +11,12 @@
   --tab-bg:#eaf6ff;
   --tab-border:#d6ecff;
   --tab-text:#1e6fb0;
-  --btn-padding:7px 10px;
+  --btn-padding:6px 8px;
   --gap:8px;
   --card-radius:8px;
   --card-width-desktop:220px;
-  --progress-max-height:240px;
-  --card-min:150px; /* slightly smaller so 3 cols fit well on phone */
+  --progress-max-height:260px;
+  --card-min:120px; /* smaller so 3 cols fit well on phone */
   --header-padding:10px;
 }
 *{box-sizing:border-box}
@@ -31,18 +31,21 @@ header{
   position:sticky; top:0; z-index:60;
   box-shadow:0 2px 6px rgba(10,10,10,0.06);
   overflow:hidden;
+  transition: transform 0.22s ease;
+  transform: translateY(0);
 }
+header.header-hidden{ transform: translateY(-120%); }
 body.dark header{ background:#122028 }
 
 /* top-row: allow children to shrink (prevent overflow) */
 .top-row{ display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
-.top-row > * { min-width:0 } /* KEY: allow flex children to shrink */
+.top-row > * { min-width:0 } /* allow children to shrink */
 .brand{font-weight:700;color:var(--accent);font-size:15px}
 
 .search-wrap{
   flex:1 1 auto;
   margin-left:8px;
-  min-width:0; /* KEY: allows search to shrink on small screens */
+  min-width:0;
   max-width:calc(100% - 200px);
 }
 .search-input{
@@ -51,7 +54,7 @@ body.dark header{ background:#122028 }
   border-radius:8px;
   border:1px solid rgba(0,0,0,0.08);
   font-size:14px;
-  min-width:0; /* KEY */
+  min-width:0;
 }
 
 /* control buttons container shrink safely */
@@ -62,7 +65,7 @@ header > .controls { display:flex; gap:8px; align-items:center; min-width:0 }
   display:flex;
   gap:8px;
   overflow-x:auto;
-  padding:8px 12px; /* add horizontal padding to match header */
+  padding:8px 12px;
   margin-top:8px;
   -webkit-overflow-scrolling: touch;
   box-sizing:border-box;
@@ -70,13 +73,12 @@ header > .controls { display:flex; gap:8px; align-items:center; min-width:0 }
 .tab{padding:8px 10px;border-radius:8px;background:var(--tab-bg);border:1px solid var(--tab-border);cursor:pointer;white-space:nowrap;font-size:13px;color:var(--tab-text)}
 .tab.active{background:var(--accent);color:white;box-shadow:0 2px 8px rgba(0,0,0,0.12)}
 
-/* main area */
 main{padding:10px}
 .status{padding:8px 12px;color:#345;font-size:13px}
 
-/* grid & cards - use auto-fill and minmax to avoid half-column issues */
+/* grid & cards - use auto-fill and minmax to avoid half-column */
 .grid{ display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr)); gap: var(--gap); }
-.card{ background:white;border-radius:var(--card-radius);padding:8px;box-shadow:0 1px 4px rgba(12,15,30,0.06);display:flex;flex-direction:column;gap:6px;font-size:13px;position:relative;align-items:stretch;min-height:180px;overflow:hidden }
+.card{ background:white;border-radius:var(--card-radius);padding:8px;box-shadow:0 1px 4px rgba(12,15,30,0.06);display:flex;flex-direction:column;gap:6px;font-size:13px;position:relative;align-items:stretch;min-height:170px;overflow:hidden }
 body.dark .card{ background:#15181a }
 .thumb-wrap{ width:100%; aspect-ratio:1/1; overflow:hidden; border-radius:8px; background:#f6f8fa }
 body.dark .thumb-wrap{ background:#222528 }
@@ -84,7 +86,7 @@ body.dark .thumb-wrap{ background:#222528 }
 
 /* checkbox for multiselect mode */
 /* show checkbox when body has class 'body-multiselect' */
-.checkbox-select{position:absolute;left:8px;top:8px;z-index:20;width:26px;height:26px;transform:scale(1.2);display:none}
+.checkbox-select{position:absolute;left:8px;top:8px;z-index:20;width:28px;height:28px;transform:scale(1.2);display:none}
 body.body-multiselect .checkbox-select{ display:block }
 
 /* buttons */
@@ -94,8 +96,8 @@ body.body-multiselect .checkbox-select{ display:block }
 body.dark .btn.tab-like{ background:#14232a; border-color:#1b2b32; color:#9fcffb; }
 .controls-left .btn{ margin-right:12px; }
 
-/* share button */
-.share-btn{ border:1px solid #cccccc; background:#ffffff; color:#000; white-space:nowrap; display:inline-flex; gap:8px; align-items:center; padding:8px; border-radius:8px; }
+/* share button (smaller) */
+.share-btn{ border:1px solid #cccccc; background:#ffffff; color:#000; white-space:nowrap; display:inline-flex; gap:6px; align-items:center; padding:6px 8px; border-radius:8px; font-size:12px; line-height:1; }
 body.dark .share-btn{ background:#222426; color:#e6e9eb; border-color:#444; }
 
 /* actions bar / sections */
@@ -104,17 +106,20 @@ body.dark .share-btn{ background:#222426; color:#e6e9eb; border-color:#444; }
 .muted{color:#666;font-size:13px}
 
 /* modal */
-.modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;z-index:80;align-items:center;justify-content:center}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;z-index:120;align-items:center;justify-content:center}
 .modal.open{display:flex}
 .modal-content{background:white;width:92%;height:86%;border-radius:12px;display:flex;flex-direction:column;overflow:auto}
 body.dark .modal-content{ background:#0f1315; color:#e6e9eb }
 .modal-header{padding:10px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between}
 .modal-body{padding:10px;overflow:auto}
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-@media(max-width:700px){.two-col{grid-template-columns:1fr}}
+
+/* detail grid: 4 columns desktop, 4 on phone too if space */
+.detail-grid{ display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; }
+@media(max-width:900px){ .detail-grid{ grid-template-columns: repeat(3, 1fr); } }
+@media(max-width:480px){ .detail-grid{ grid-template-columns: repeat(2, 1fr); } }
 
 /* progress panel */
-.progress-panel { position: fixed; right: 12px; bottom: 12px; padding: 10px; width: 360px; max-width: calc(100% - 24px); background: rgba(255,255,255,0.98); border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.12); z-index: 120; display: none; font-size:13px; }
+.progress-panel { position: fixed; right: 12px; bottom: 12px; padding: 10px; width: 360px; max-width: calc(100% - 24px); background: rgba(255,255,255,0.98); border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.12); z-index: 140; display: none; font-size:13px; }
 .progress-panel.open { display:block; }
 .groups-scroll { max-height: var(--progress-max-height); overflow:auto; padding-right:6px; margin-bottom:8px; }
 .progress-row { margin-bottom:8px; border-bottom:1px solid #eee; padding-bottom:6px; }
@@ -137,11 +142,11 @@ body.dark .modal-content{ background:#0f1315; color:#e6e9eb }
 .row-actions { display:flex; gap:6px; align-items:center; }
 
 /* floating delete */
-.float-delete{ position:fixed; left:12px; bottom:12px; z-index:130; display:none; }
+.float-delete{ position:fixed; left:12px; bottom:12px; z-index:150; display:none; }
 .float-delete button{ background:#ff3b30; color:#fff; border:none; padding:12px 16px; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,0.15); cursor:pointer; font-weight:700; }
 
 /* responsive tweaks */
-@media (min-width: 600px) and (max-width: 999px) { .grid{ grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; } }
+@media (min-width: 600px) and (max-width: 999px) { .grid{ grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; } }
 @media (min-width: 1000px) { .grid{ grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:12px; } }
 @media (max-width:480px){ .progress-panel{ width: 92%; right: 4%; } .grid{ grid-template-columns: repeat(3, 1fr); } }
 
@@ -207,6 +212,7 @@ const WORKER_BASE = "https://shoes-worker.lapproak0.workers.dev";
 const PREFIX = "Shoes";
 
 /* DOM refs */
+const headerEl = document.getElementById('pageHeader');
 const statusEl = document.getElementById('status');
 const tabsEl = document.getElementById('tabs');
 const contentEl = document.getElementById('content');
@@ -322,6 +328,7 @@ function createTabButton(text, key){
     btn.classList.add('active');
     setActiveButton();
     renderAccording();
+    window.scrollTo({ top: 0, behavior: 'smooth' }); // bring header into view when switching
   };
   return btn;
 }
@@ -377,16 +384,22 @@ function makeCard(size, bc, withCheckbox=false){
   return card;
 }
 
-/* open details */
+/* open details - use detail-grid 4 columns */
 function openDetails(size, bc){
   modalTitle.textContent = `${size} — ${bc.code}`;
   modalBody.innerHTML = '';
   const imgs = bc.images || [];
-  const div = document.createElement('div'); div.className='two-col';
+  const div = document.createElement('div'); div.className='detail-grid';
   for(const fn of imgs){
+    const imWrap = document.createElement('div');
+    imWrap.style.width = '100%';
     const im = document.createElement('img');
     im.src = `${WORKER_BASE}/${PREFIX}/${encodeURIComponent(String(size).trim())}/${encodeURIComponent(String(bc.code).trim())}/${encodeURIComponent(fn)}`;
-    div.appendChild(im);
+    im.style.width = '100%';
+    im.style.height = 'auto';
+    im.style.objectFit = 'cover';
+    imWrap.appendChild(im);
+    div.appendChild(imWrap);
   }
   modalBody.appendChild(div);
   modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
@@ -412,21 +425,58 @@ function renderActionsBar(){
   return bar;
 }
 
-/* delete */
+/* progress UI helpers (used for both upload and delete) */
+function showProgressPanel(){ progressPanel.classList.add('open'); progressPanel.setAttribute('aria-hidden','false'); }
+function hideProgressPanel(){ progressPanel.classList.remove('open'); progressPanel.setAttribute('aria-hidden','true'); }
+closeProgressBtn.onclick = ()=> hideProgressPanel();
+function scrollProgressToBottom(){ groupsContainer.scrollTop = groupsContainer.scrollHeight; }
+function updateOverallProgress(loaded, total){ const pct = total? Math.round(loaded/total*100) : 0; overallBar.style.width = pct + '%'; overallPercent.textContent = pct + '%'; scrollProgressToBottom(); }
+function createGroupProgress(groupId, label){ const row = document.createElement('div'); row.className='progress-row'; row.id = 'group-' + groupId; const lbl = document.createElement('div'); lbl.className='progress-label'; lbl.innerHTML = `<span>${escapeHtml(label)}</span><span class="group-percent" style="float:right">0%</span>`; const barBg = document.createElement('div'); barBg.className='progress-bar-bg'; const barFill = document.createElement('div'); barFill.className='progress-bar-fill'; barBg.appendChild(barFill); const fileList = document.createElement('div'); fileList.className='file-list'; row.appendChild(lbl); row.appendChild(barBg); row.appendChild(fileList); groupsContainer.appendChild(row); scrollProgressToBottom(); return { row, lbl, barFill, fileList }; }
+function markGroupDone(groupEl, ok=true, msg='OK'){ groupEl.barFill.style.width = '100%'; const s = document.createElement('div'); s.textContent = ok ? (msg || 'OK') : ('ERR: ' + (msg||'')); s.style.marginTop='6px'; groupEl.fileList.appendChild(s); const percentEl = groupEl.row.querySelector('.group-percent'); if(percentEl) percentEl.textContent = '100%'; scrollProgressToBottom(); }
+
+/* delete with progress: call /permanent-delete per item for progress UI */
 async function performBulkDelete(){
   if(selectedItems.size === 0) return alert('Chưa chọn mục để xóa');
   const key = promptAdminKeyIfNeeded(); if(!key){ alert('Hủy: cần ADMIN_KEY'); return; }
   if(!confirm('Xác nhận xóa đã chọn?')) return;
+
   const items = Array.from(selectedItems).map(s=>{ const [size, barcode] = s.split('|'); return { size, barcode }; });
-  try{
-    const r = await fetch(WORKER_BASE + '/bulk-delete', { method:'POST', headers:{ 'Content-Type':'application/json','x-api-key': key }, body: JSON.stringify({ items })});
-    if(!r.ok){ const t = await r.text().catch(()=>r.statusText); throw new Error('Delete failed: ' + t); }
-    const j = await r.json();
-    alert('Xóa hoàn tất. Deleted keys: ' + (j.totalDeleted||0));
-    selectedItems.clear(); multiSelectMode=false; updateBodyMultiselectClass(); floatDelete.style.display='none';
-    await fetchManifest(); activeTab='all'; renderAccording();
-  } catch(err){ console.error(err); alert('Lỗi xóa: ' + (err.message || err)); }
+  showProgressPanel(); groupsContainer.innerHTML = '';
+  let overallTotal = items.length, overallDone = 0;
+  updateOverallProgress(0, overallTotal);
+
+  for(const it of items){
+    const gid = `${it.size}|${it.barcode}`;
+    const groupEl = createGroupProgress(gid, `${it.size} — ${it.barcode}`);
+    try{
+      // call single delete
+      const res = await fetch(WORKER_BASE + '/permanent-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': key },
+        body: JSON.stringify({ size: it.size, barcode: it.barcode })
+      });
+      if(!res.ok){
+        const txt = await res.text().catch(()=>res.statusText);
+        markGroupDone(groupEl, false, txt);
+      } else {
+        markGroupDone(groupEl, true, 'Deleted');
+      }
+    } catch(err){
+      console.error('delete error', err);
+      markGroupDone(groupEl, false, err.message || 'Error');
+    }
+    overallDone++;
+    updateOverallProgress(overallDone, overallTotal);
+  }
+
+  // refresh manifest after deletes
+  try { await fetchManifest({ forceRefresh: true }); } catch(e){ console.warn('refresh after delete failed', e); }
+  selectedItems.clear(); multiSelectMode=false; updateBodyMultiselectClass(); floatDelete.style.display='none';
+  alert('Xóa hoàn tất.');
 }
+
+/* floating delete behavior */
+floatDeleteBtn.onclick = performBulkDelete;
 
 /* renderAll / renderSize / renderAdd */
 function renderAll(){
@@ -449,12 +499,10 @@ function renderSize(sizeStr){
   contentEl.appendChild(grid);
 }
 
-/* add tab simplified (same as before) */
+/* add tab (kept minimal here) */
 function renderAdd(){
   contentEl.innerHTML = '';
   contentEl.appendChild(renderActionsBar());
-  // keep previous add implementation (omitted here for brevity in this response)
-  // We'll reuse your existing add-tab code when you paste this file in (no logical change needed).
   const note = document.createElement('div'); note.className='muted'; note.textContent = 'Tab Thêm (bảng thêm hàng) ...';
   contentEl.appendChild(note);
 }
@@ -470,7 +518,7 @@ function doSearch(){ const q = (searchInput.value||'').trim().toLowerCase(); if(
 refreshBtn.onclick = async ()=> { try{ const key = promptAdminKeyIfNeeded(); if(!key){ alert('Hủy: cần ADMIN_KEY'); return; } const r = await fetch(WORKER_BASE + '/refresh-manifest', { method:'POST', headers:{ 'x-api-key': key }}); if(!r.ok){ const t = await r.text().catch(()=>r.statusText); throw new Error('Refresh failed: ' + t); } await fetchManifest(); alert('Manifest rebuilt'); } catch(err){ console.error(err); alert('Refresh error: ' + err.message); } };
 clearKeyBtn.onclick = ()=> { setAdminKeySession(null); alert('Admin key đã xóa khỏi session'); };
 
-/* share (kept) */
+/* single-card share (kept) */
 async function shareMultipleImages(size, barcodeObj){
   try{
     showModal('Chuẩn bị chia sẻ', '<div id="prepareMsg">Đang lấy ảnh, vui lòng chờ…</div>');
@@ -510,8 +558,21 @@ async function shareMultipleImages(size, barcodeObj){
   }
 }
 
+/* helper */
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* header hide/show on scroll: only show when at very top */
+let lastScrollY = 0;
+function handleScroll(){
+  const y = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
+  // show header only when at the very top
+  if(y === 0) headerEl.classList.remove('header-hidden'); else headerEl.classList.add('header-hidden');
+  lastScrollY = y;
+}
+window.addEventListener('scroll', handleScroll, { passive: true });
+
 /* init */
-async function init(){ await fetchManifest(); updateBodyMultiselectClass(); floatDelete.style.display = 'none'; }
+async function init(){ await fetchManifest(); updateBodyMultiselectClass(); floatDelete.style.display = 'none'; handleScroll(); }
 init();
 
 </script>
