@@ -14,7 +14,6 @@
   --btn-padding:6px 8px;
   --gap:8px;
   --card-radius:8px;
-  --card-width-desktop:220px;
   --progress-max-height:260px;
   --card-min:120px;
   --header-padding:10px;
@@ -72,7 +71,7 @@ body.body-multiselect .checkbox-select{ display:block }
 body.dark .btn.tab-like{ background:#14232a; border-color:#1b2b32; color:#9fcffb }
 .controls-left .btn{ margin-right:12px }
 
-/* share button smaller */
+/* share button smaller & icon-only text */
 .share-btn{ border:1px solid #cccccc; background:#ffffff; color:#000; white-space:nowrap; display:inline-flex; gap:6px; align-items:center; padding:6px 8px; border-radius:8px; font-size:12px; line-height:1; }
 body.dark .share-btn{ background:#222426; color:#e6e9eb; border-color:#444 }
 
@@ -223,7 +222,6 @@ modal.onclick = (e)=>{ if(e.target === modal) document.getElementById('modalClos
 function normalizeManifest(raw){
   if(!raw) return { sizes: [] };
   if(Array.isArray(raw)) return { sizes: raw };
-  // If manifest already uses sizes array structure
   if(raw.sizes && Array.isArray(raw.sizes)) {
     return { sizes: raw.sizes.map(s=>({ size: String(s.size||s.name||'').trim(), barcodes: Array.isArray(s.barcodes) ? s.barcodes.map(b=>({ code: String(b.code||'').trim(), images: Array.isArray(b.images)?b.images.slice():[] })) : [] })) };
   }
@@ -271,7 +269,8 @@ async function fetchManifest({ forceRefresh=false }={}) {
     }
     manifest = normalizeManifest(manifestRaw || {});
     buildManifestMap();
-    logStatus('Loaded manifest (sizes: ' + manifest.sizes.length + ')');
+    // do not print sizes count per user's request
+    logStatus('Manifest loaded');
     buildTabs();
   } catch(err){
     console.error(err); logStatus('Không load được manifest: ' + err.message); contentEl.innerHTML='';
@@ -329,14 +328,15 @@ function makeCard(size, bc, withCheckbox=false){
 
   const row = document.createElement('div'); row.style.display='flex'; row.style.justifyContent='center'; row.style.gap='8px';
   const shareBtn = document.createElement('button'); shareBtn.className='btn share-btn';
+  // icon + bold barcode only
   shareBtn.innerHTML = `
-    <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' style='vertical-align:middle;margin-right:6px;'>
+    <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' style='vertical-align:middle;'>
       <g fill='none' stroke='currentColor' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'>
         <rect x='9' y='4' width='11' height='11' rx='1.2' />
         <rect x='4' y='9' width='11' height='11' rx='1.2' />
       </g>
     </svg>
-    Share <span style="font-weight:700;margin-left:6px">${bc.code}</span>
+    <span style="font-weight:700;margin-left:6px">${bc.code}</span>
   `;
   shareBtn.onclick = ()=> shareMultipleImages(size, bc);
   row.appendChild(shareBtn);
@@ -395,7 +395,7 @@ function updateFileProgress(fileObj, loaded, total){ const pct = total ? Math.ro
 function updateGroupProgress(groupEl, loaded, total){ const pct = total? Math.round(loaded/total*100) : 0; groupEl.barFill.style.width = pct + '%'; const percentEl = groupEl.row.querySelector('.group-percent'); if(percentEl) percentEl.textContent = pct + '%'; scrollProgressToBottom(); }
 function markGroupDone(groupEl, ok=true, msg='OK'){ groupEl.barFill.style.width = '100%'; const s = document.createElement('div'); s.textContent = ok ? (msg || 'OK') : ('ERR: ' + (msg||'')); s.style.marginTop='6px'; groupEl.fileList.appendChild(s); const percentEl = groupEl.row.querySelector('.group-percent'); if(percentEl) percentEl.textContent = '100%'; scrollProgressToBottom(); }
 
-/* DELETE with progress: call permanent-delete per item */
+/* DELETE with progress: call permanent-delete per item and refresh manifest (force) after delete */
 async function performBulkDelete(){
   if(selectedItems.size === 0) return alert('Chưa chọn mục để xóa');
   const key = promptAdminKeyIfNeeded(); if(!key){ alert('Hủy: cần ADMIN_KEY'); return; }
@@ -430,8 +430,15 @@ async function performBulkDelete(){
     updateOverallProgress(overallDone, overallTotal);
   }
 
-  // fetch manifest again (no admin key required) to reflect changes
-  try { await fetchManifest(); } catch(e){ console.warn('refresh after delete failed', e); }
+  // rebuild manifest on worker (requires admin key)
+  try{
+    const r = await fetch(WORKER_BASE + '/refresh-manifest', { method: 'POST', headers: { 'x-api-key': key } });
+    if(!r.ok) console.warn('refresh-manifest returned', r.status);
+  } catch(e){ console.warn('refresh-manifest error', e); }
+
+  // fetch fresh manifest (non-force)
+  try { await fetchManifest(); } catch(e){ console.warn('fetchManifest after delete failed', e); }
+
   selectedItems.clear(); multiSelectMode=false; updateBodyMultiselectClass(); floatDelete.style.display='none';
   alert('Xóa hoàn tất.');
 }
@@ -440,7 +447,6 @@ async function performBulkDelete(){
 floatDeleteBtn.onclick = performBulkDelete;
 
 /* render functions (all/size/add) */
-/* renderAll & renderSize */
 function renderAll(){
   contentEl.innerHTML = '';
   contentEl.appendChild(renderActionsBar());
@@ -461,14 +467,13 @@ function renderSize(sizeStr){
   contentEl.appendChild(grid);
 }
 
-/* RENDER ADD: full behaviour */
+/* RENDER ADD: full behaviour with requested tweaks */
 function renderAdd(){
   contentEl.innerHTML = '';
   contentEl.appendChild(renderActionsBar());
 
   const container = document.createElement('div');
-  container.style.padding = '12px';
-  container.style.borderRadius = '8px';
+  container.style.padding = '12px'; container.style.borderRadius = '8px';
 
   const controls = document.createElement('div'); controls.style.display='flex'; controls.style.justifyContent='space-between'; controls.style.alignItems='center';
   const left = document.createElement('div'); left.className='controls-left';
@@ -514,7 +519,7 @@ function renderAdd(){
     inputDetails.onchange = (e) => { detailsPreviewWrap.innerHTML = ''; const files = Array.from(e.target.files || []); for(const f of files){ const img = document.createElement('img'); img.src = URL.createObjectURL(f); img.className='small-thumb'; detailsPreviewWrap.appendChild(img); } tr.__prefilledFiles = null; };
     if(prefill.detailFiles && prefill.detailFiles.length){ for(const f of prefill.detailFiles){ const img = document.createElement('img'); img.src = URL.createObjectURL(f); img.className='small-thumb'; detailsPreviewWrap.appendChild(img); } tr.__prefilledFiles = prefill.detailFiles.slice(); }
 
-    const tdAction = document.createElement('td'); const removeBtn = document.createElement('button'); removeBtn.className='btn tab-like'; removeBtn.textContent='Xóa dòng'; removeBtn.onclick = ()=> tr.remove(); const actionWrap = document.createElement('div'); actionWrap.className='row-actions'; actionWrap.appendChild(removeBtn); tdAction.appendChild(actionWrap);
+    const tdAction = document.createElement('td'); const removeBtn = document.createElement('button'); removeBtn.className='btn tab-like'; removeBtn.textContent='Xóa'; removeBtn.onclick = ()=> tr.remove(); const actionWrap = document.createElement('div'); actionWrap.className='row-actions'; actionWrap.appendChild(removeBtn); tdAction.appendChild(actionWrap);
 
     tr.appendChild(tdThumb); tr.appendChild(tdBarcode); tr.appendChild(tdSize); tr.appendChild(tdDetails); tr.appendChild(tdAction); tbody.appendChild(tr);
 
@@ -584,9 +589,19 @@ function renderAdd(){
     } catch(e){ console.error(e); alert('Upload lỗi: ' + e.message); }
   };
 
+  // folder input: validate top-level folder name is Shoes (if present)
   folderInput.onchange = async (e)=>{
     const files = Array.from(folderInput.files || []);
-    if(!files.length) return;
+    if(!files.length) return; // don't show message
+    // check if selected files include a top-level directory named 'Shoes' (case-insensitive)
+    const sample = files[0].webkitRelativePath || files[0].name;
+    const parts = sample.split('/').filter(Boolean);
+    if(parts.length>0 && parts[0].toLowerCase() !== 'shoes'){
+      alert('Vui lòng chọn thư mục "Shoes" (chứa các folder Size X). Xin chọn lại.');
+      folderInput.value = '';
+      return;
+    }
+
     const groupsMap = {};
     for(const f of files){
       const rel = f.webkitRelativePath || f.name;
@@ -621,21 +636,16 @@ function renderAdd(){
 }
 
 /* helper functions used by add tab upload */
-function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 function updateBodyMultiselectClass(){ if(multiSelectMode) document.body.classList.add('body-multiselect'); else document.body.classList.remove('body-multiselect'); }
 
 /* UPLOAD utilities (presign + upload flow) */
-/* NOTE: worker must implement presign-upload and complete-upload endpoints.
-   If your worker doesn't have presign endpoints, use direct PUT approach in previous files.
-*/
-
 function uploadFileWithProgress(url, file, onProgress){ return new Promise((resolve, reject) => { const xhr = new XMLHttpRequest(); xhr.open('PUT', url, true); try { xhr.setRequestHeader('Content-Type', file.type); } catch(e){} xhr.upload.onprogress = (ev) => { if (ev.lengthComputable && typeof onProgress === 'function') onProgress(ev.loaded, ev.total); }; xhr.onload = () => { if (xhr.status >= 200 && xhr.status < 300) resolve({ ok:true, status: xhr.status, response: xhr.responseText }); else reject(new Error('Upload failed: ' + xhr.status + ' ' + xhr.statusText + ' - ' + xhr.responseText)); }; xhr.onerror = () => reject(new Error('Network error during upload')); xhr.send(file); }); }
 
 async function convertImageFileToJpeg(file, maxWidth=1600, quality=0.80){ if(!file.type || !file.type.startsWith('image/')) return file; try{ const imgBitmap = await createImageBitmap(file); const scale = imgBitmap.width > maxWidth ? maxWidth / imgBitmap.width : 1; const w = Math.round(imgBitmap.width * scale); const h = Math.round(imgBitmap.height * scale); const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(imgBitmap, 0, 0, w, h); const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', quality)); const newName = (file.name.replace(/\.[^/.]+$/, '') || 'image') + '.jpeg'; return new File([blob], newName, { type: 'image/jpeg' }); } catch(e){ console.warn('convertImageFileToJpeg failed', e); return file; } }
 
 async function uploadPreparedGroups(preparedGroups, adminKey){
-  // overall byte count
   let overallTotal = 0; for(const g of preparedGroups) for(const p of g.prepared) overallTotal += p.file.size;
   let overallLoaded = 0;
   showProgressPanel(); groupsContainer.innerHTML = ''; updateOverallProgress(0, overallTotal);
@@ -648,7 +658,6 @@ async function uploadPreparedGroups(preparedGroups, adminKey){
     let groupLoaded = 0;
     const fileObjs = [];
     for(const p of g.prepared) fileObjs.push(addFileStatus(groupEl.fileList, p.remoteName));
-    // presign step
     const filenames = g.prepared.map(p=>p.remoteName);
     const presignRes = await fetch(WORKER_BASE + '/presign-upload', { method:'POST', headers:{ 'Content-Type':'application/json', 'x-api-key': adminKey }, body: JSON.stringify({ size: g.size, barcode: g.barcode, files: filenames, expiresIn: 3600 })});
     if(!presignRes.ok){ const t = await presignRes.text().catch(()=>presignRes.statusText); throw new Error('Presign failed: ' + t); }
@@ -657,7 +666,6 @@ async function uploadPreparedGroups(preparedGroups, adminKey){
       const p = g.prepared[i]; const fileObj = fileObjs[i]; const url = urls[p.remoteName]; if(!url) throw new Error('Missing presigned URL for ' + p.remoteName);
       try{ await uploadFileWithProgress(url, p.file, (loaded, total)=>{ updateFileProgress(fileObj, loaded, total); const groupEstimate = groupLoaded + loaded; updateGroupProgress(groupEl, Math.min(groupEstimate, groupTotal), groupTotal); updateOverallProgress(overallLoaded + loaded, overallTotal); }); updateFileProgress(fileObj, p.file.size, p.file.size); groupLoaded += p.file.size; overallLoaded += p.file.size; updateGroupProgress(groupEl, groupLoaded, groupTotal); updateOverallProgress(overallLoaded, overallTotal); fileObj.statusEl.textContent = 'OK'; } catch(e){ fileObj.statusEl.textContent = 'ERR'; console.error('Upload file error', e); throw e; }
     }
-    // complete upload
     const complete = await fetch(WORKER_BASE + '/complete-upload', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ size: g.size, barcode: g.barcode })});
     if(!complete.ok){ const t = await complete.text().catch(()=>complete.statusText); throw new Error('Complete-upload failed: ' + t); }
   }
@@ -690,10 +698,7 @@ async function shareMultipleImages(size, barcodeObj){
         const blob = await r.blob();
         const fname = decodeURIComponent(u.split('/').pop());
         files.push(new File([blob], fname, { type: blob.type }));
-      } catch(e){
-        console.warn('fetch error', e, u);
-        continue;
-      }
+      } catch(e){ console.warn('fetch error', e, u); continue; }
     }
     document.getElementById('modalClose').click();
     if(files.length === 0) return alert('Không thu thập được file nào để chia sẻ');
@@ -702,20 +707,14 @@ async function shareMultipleImages(size, barcodeObj){
         await navigator.share({ files, title: 'Images ' + barcodeObj.code });
         return;
       }
-    } catch(err){
-      console.warn('navigator.share failed:', err);
-    }
+    } catch(err){ console.warn('navigator.share failed:', err); }
     const el = document.createElement('div');
     for(const f of files){ const img = document.createElement('img'); img.src = URL.createObjectURL(f); img.style.maxWidth='100%'; img.style.marginBottom='8px'; el.appendChild(img); }
     showModal('Ảnh để lưu thủ công', el);
-  } catch(err){
-    console.error('shareMultipleImages error', err);
-    try { document.getElementById('modalClose').click(); } catch(e){}
-    alert('Lỗi khi chia sẻ: ' + (err.message || err));
-  }
+  } catch(err){ console.error('shareMultipleImages error', err); try { document.getElementById('modalClose').click(); } catch(e){} alert('Lỗi khi chia sẻ: ' + (err.message || err)); }
 }
 
-/* header hide/show: header shown only when at very top (requested) */
+/* header hide/show: header shown only when at very top */
 const headerEl = document.getElementById('pageHeader');
 function handleScroll(){ const y = window.scrollY || window.pageYOffset || document.documentElement.scrollTop; if(y === 0) headerEl.classList.remove('header-hidden'); else headerEl.classList.add('header-hidden'); }
 window.addEventListener('scroll', handleScroll, { passive: true });
