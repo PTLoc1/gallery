@@ -201,54 +201,65 @@ let selectedItems = new Set();
 let multiSelectMode = false;
 
 /* session admin key */
-/* --- Admin key: only save after validation --- */
-function getAdminKeySession(){ return sessionStorage.getItem('admin_key_v1') || null; }
-function setAdminKeySession(key){
-  if(!key) sessionStorage.removeItem('admin_key_v1');
-  else sessionStorage.setItem('admin_key_v1', key);
+function getAdminKeySession() {
+  return sessionStorage.getItem('admin_key_v1') || null;
 }
 
-/**
- * Prompt user for ADMIN key and validate it on the Worker.
- * Will NOT save until worker responds OK.
- * Returns a valid key (saved into sessionStorage) or null if user cancels.
- */
+function setAdminKeySession(key) {
+  if (!key) sessionStorage.removeItem('admin_key_v1');
+  else sessionStorage.setItem('admin_key_v1', key);
+}
+  
 async function promptAndValidateAdminKey(){
-  // if already stored, assume valid and return it
+  // if already in session, return it
   const existing = getAdminKeySession();
-  if(existing) return existing;
+  if (existing) return existing;
 
-  while(true){
+  while (true) {
     const input = prompt('Nhập ADMIN_KEY (sẽ chỉ lưu nếu hợp lệ). Ấn Cancel để hủy.');
-    if(!input) return null; // user canceled or empty
+    if (!input) return null; // user canceled or empty
 
     const trimmed = input.trim();
-    if(!trimmed){ alert('Key rỗng — nhập lại hoặc hủy'); continue; }
+    if (!trimmed) { alert('Key rỗng — nhập lại hoặc hủy'); continue; }
 
     try {
-      // Validate by calling manifest refresh endpoint that requires admin key.
-      // Using GET /manifest.json?refresh=1 so worker will check header x-api-key.
-      const url = WORKER_BASE + '/manifest.json?refresh=1';
-      const res = await fetch(url, { method: 'GET', headers: { 'x-api-key': trimmed } });
-      if(res.ok){
-        // key valid -> save and update manifest client-side
+      // Validate using POST /refresh-manifest (requires admin key)
+      const url = WORKER_BASE + '/refresh-manifest';
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': trimmed,
+          'Cache-Control': 'no-store'
+        },
+        body: JSON.stringify({ now: Date.now() })
+      });
+
+      // Accept only explicit 200
+      if (res.status === 200) {
+        // OK -> save and refresh manifest client-side
         setAdminKeySession(trimmed);
-        try { await fetchManifest(); } catch(e) { /* ignore fetchManifest error here */ }
+        try { await fetchManifest(); } catch (e) { /* ignore fetchManifest error */ }
         return trimmed;
+      } else if (res.status === 401) {
+        alert('Admin key không hợp lệ (401). Vui lòng thử lại.');
+        continue; // prompt again
       } else {
-        // invalid -> show message and prompt again
-        let body = '';
-        try { body = await res.text(); } catch(e){}
-        alert('Admin key không hợp lệ: ' + (body || ('HTTP ' + res.status)));
+        // other non-200 statuses
+        let txt = '';
+        try { txt = await res.text(); } catch(e){ /* ignore */ }
+        alert('Lỗi khi kiểm tra key. Status: ' + res.status + (txt ? (' — ' + txt) : ''));
         continue;
       }
-    } catch(err){
-      // network/other error -> show and let user retry or cancel
-      alert('Lỗi khi kiểm tra admin key: ' + (err && err.message ? err.message : err));
+    } catch (err) {
+      // network / fetch error
+      console.warn('Error validating admin key:', err);
+      alert('Lỗi mạng khi kiểm tra admin key. Thử lại?');
       continue;
     }
   }
 }
+
 
 /* theme */
 function applyTheme(isDark){ document.body.classList.toggle('dark', !!isDark); sessionStorage.setItem('dark_mode_v1', !!isDark); }
