@@ -229,9 +229,9 @@ async function promptAndValidateAdminKey(){
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': trimmed,
-          'Cache-Control': 'no-store'
+          'x-api-key': trimmed
         },
+        cache: 'no-store',
         body: JSON.stringify({ now: Date.now() })
       });
 
