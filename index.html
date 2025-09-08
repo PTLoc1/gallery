@@ -706,9 +706,9 @@ async function shareMultipleImages(size, barcodeObj){
         return;
       }
     } catch(err){ console.warn('navigator.share failed:', err); }
-    const el = document.createElement('div');
+    /*const el = document.createElement('div');
     for(const f of files){ const img = document.createElement('img'); img.src = URL.createObjectURL(f); img.style.maxWidth='100%'; img.style.marginBottom='8px'; el.appendChild(img); }
-    showModal('Ảnh để lưu thủ công', el);
+    showModal('Ảnh để lưu thủ công', el);*/
   } catch(err){ console.error('shareMultipleImages error', err); try { document.getElementById('modalClose').click(); } catch(e){} alert('Lỗi khi chia sẻ: ' + (err.message || err)); }
 }
 
