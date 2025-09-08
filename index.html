@@ -128,12 +128,10 @@ img{ max-width:100%; display:block }
 <body>
 <header id="pageHeader">
   <div class="top-row">
-    <div style="display:flex;align-items:center;gap:8px;flex:0 0 auto"><div class="brand">77Store - Gallery</div></div>
     <div class="search-wrap"><input id="searchInput" class="search-input" placeholder="Tìm theo barcode (VD: 146888) — Enter để tìm" /></div>
     <div class="controls" style="flex:0 0 auto">
       <button id="themeToggle" class="btn tab-like">Light/Dark</button>
       <button id="refreshBtn" class="btn tab-like">Refresh</button>
-      <button id="clearKeyBtn" class="btn" title="Xóa Admin Key trong session">Clear Key</button>
     </div>
   </div>
   <div id="tabs" class="tabs"></div>
@@ -203,9 +201,61 @@ let selectedItems = new Set();
 let multiSelectMode = false;
 
 /* session admin key */
+/* --- Admin Key: prompt + validate before saving --- */
 function getAdminKeySession(){ return sessionStorage.getItem('admin_key_v1') || null; }
-function setAdminKeySession(key){ if(!key) sessionStorage.removeItem('admin_key_v1'); else sessionStorage.setItem('admin_key_v1', key); }
-function promptAdminKeyIfNeeded(){ const existing = getAdminKeySession(); if(existing) return existing; const k = prompt('Nhập ADMIN_KEY (sẽ lưu trong session cho phiên này):'); if(!k) return null; const t=k.trim(); setAdminKeySession(t); return t; }
+function setAdminKeySession(key){
+  if(!key) sessionStorage.removeItem('admin_key_v1');
+  else sessionStorage.setItem('admin_key_v1', key);
+}
+
+/**
+ * Prompt user for ADMIN key and validate it on the Worker.
+ * - Will not save the key until Worker responds OK.
+ * - If user cancels the prompt, returns null.
+ * - If validation fails, prompts again.
+ *
+ * Returns the valid key (also saved into sessionStorage) or null.
+ */
+async function promptAndValidateAdminKey(){
+  // If already stored, return it (assume valid)
+  const existing = getAdminKeySession();
+  if(existing) return existing;
+
+  while(true){
+    const input = prompt('Nhập ADMIN_KEY (sẽ chỉ lưu nếu hợp lệ). Ấn Cancel để hủy.');
+    if(!input) { // user cancelled or empty
+      return null;
+    }
+    const trimmed = input.trim();
+    if(!trimmed){
+      alert('Key rỗng. Vui lòng nhập lại hoặc ấn Cancel.');
+      continue;
+    }
+
+    try {
+      // Validate by calling manifest refresh endpoint which requires admin key
+      // NOTE: this triggers a manifest rebuild on the worker — acceptable for validation.
+      const url = WORKER_BASE + '/manifest.json?refresh=1';
+      const res = await fetch(url, { method: 'GET', headers: { 'x-api-key': trimmed } });
+      if(res.ok){
+        // success -> store into session and refresh client manifest
+        setAdminKeySession(trimmed);
+        try { await fetchManifest(); } catch(e){ /* ignore fetchManifest errors here */ }
+        return trimmed;
+      } else {
+        // not authorized / bad key
+        let bodyText = await res.text().catch(()=>res.statusText);
+        alert('Admin key không hợp lệ: ' + (bodyText || res.status));
+        // loop to prompt again
+        continue;
+      }
+    } catch(err){
+      alert('Lỗi khi kiểm tra admin key: ' + (err.message || err) + '\\nBạn có thể thử lại.');
+      // loop to prompt again
+      continue;
+    }
+  }
+}
 
 /* theme */
 function applyTheme(isDark){ document.body.classList.toggle('dark', !!isDark); sessionStorage.setItem('dark_mode_v1', !!isDark); }
@@ -258,7 +308,7 @@ async function fetchManifest({ forceRefresh=false }={}) {
   try {
     logStatus('Loading manifest...');
     if(forceRefresh){
-      const key = promptAdminKeyIfNeeded(); if(!key){ alert('Hủy: cần ADMIN_KEY'); return; }
+      const key = await promptAndValidateAdminKey(); if(!key){ alert('Hủy: cần ADMIN_KEY'); return; }
       const r = await fetch(WORKER_BASE + '/refresh-manifest', { method:'POST', headers:{ 'x-api-key': key }});
       if(!r.ok){ const t=await r.text().catch(()=>r.statusText); throw new Error('Refresh failed: ' + t); }
       manifestRaw = await r.json();
@@ -396,7 +446,7 @@ function markGroupDone(groupEl, ok=true, msg='OK'){ groupEl.barFill.style.width 
 /* DELETE with progress: call permanent-delete per item and refresh manifest (force) after delete */
 async function performBulkDelete(){
   if(selectedItems.size === 0) return alert('Chưa chọn mục để xóa');
-  const key = promptAdminKeyIfNeeded(); if(!key){ alert('Hủy: cần ADMIN_KEY'); return; }
+  const key = await promptAndValidateAdminKey(); if(!key){ alert('Hủy: cần ADMIN_KEY'); return; }
   if(!confirm('Xác nhận xóa đã chọn?')) return;
 
   const items = Array.from(selectedItems).map(s=>{ const [size, barcode] = s.split('|'); return { size, barcode }; });
@@ -528,7 +578,7 @@ function renderAdd(){
   addRowBtn.onclick = ()=> addRow();
 
   uploadAllBtn.onclick = async ()=>{
-    const key = promptAdminKeyIfNeeded(); if(!key){ alert('Hủy: cần ADMIN_KEY'); return; }
+    const key = await promptAndValidateAdminKey(); if(!key){ alert('Hủy: cần ADMIN_KEY'); return; }
     const rows = Array.from(tbody.querySelectorAll('tr'));
     if(rows.length===0) return alert('Chưa có dòng nào để upload');
 
@@ -678,8 +728,8 @@ searchInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') doSearch(); }
 function doSearch(){ const q = (searchInput.value||'').trim().toLowerCase(); if(!q){ alert('Nhập barcode để tìm'); return; } const matches = []; for(const s of manifest.sizes) for(const b of s.barcodes) if(String(b.code).toLowerCase().includes(q)) matches.push({ size: s.size, barcode: b }); if(matches.length===0){ alert('Không tìm thấy'); return; } const first = matches[0]; activeTab = 'size:' + first.size; document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); const tb = Array.from(document.querySelectorAll('.tab')).find(t=>t.textContent.includes(first.size)); if(tb) tb.classList.add('active'); renderAccording(); setTimeout(()=>{ const cards = Array.from(document.querySelectorAll('.card img')); for(const img of cards){ if(img.alt === first.barcode.code){ img.scrollIntoView({behavior:'smooth', block:'center'}); break; } } }, 300); }
 
 /* refresh & clear key */
-refreshBtn.onclick = async ()=> { try{ const key = promptAdminKeyIfNeeded(); if(!key){ alert('Hủy: cần ADMIN_KEY'); return; } const r = await fetch(WORKER_BASE + '/refresh-manifest', { method:'POST', headers:{ 'x-api-key': key }}); if(!r.ok){ const t = await r.text().catch(()=>r.statusText); throw new Error('Refresh failed: ' + t); } await fetchManifest(); alert('Manifest rebuilt'); } catch(err){ console.error(err); alert('Refresh error: ' + err.message); } };
-clearKeyBtn.onclick = ()=> { setAdminKeySession(null); alert('Admin key đã xóa khỏi session'); };
+refreshBtn.onclick = async ()=> { try{ const key = await promptAndValidateAdminKey(); if(!key){ alert('Hủy: cần ADMIN_KEY'); return; } const r = await fetch(WORKER_BASE + '/refresh-manifest', { method:'POST', headers:{ 'x-api-key': key }}); if(!r.ok){ const t = await r.text().catch(()=>r.statusText); throw new Error('Refresh failed: ' + t); } await fetchManifest(); alert('Manifest rebuilt'); } catch(err){ console.error(err); alert('Refresh error: ' + err.message); } };
+//clearKeyBtn.onclick = ()=> { setAdminKeySession(null); alert('Admin key đã xóa khỏi session'); };
 
 /* share single card */
 async function shareMultipleImages(size, barcodeObj){
