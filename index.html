@@ -201,43 +201,24 @@ let selectedItems = new Set();
 let multiSelectMode = false;
 
 /* session admin key */
-function getAdminKeySession() {
-  return sessionStorage.getItem('admin_key_v1') || null;
-}
-
-function setAdminKeySession(key) {
-  if (!key) sessionStorage.removeItem('admin_key_v1');
-  else sessionStorage.setItem('admin_key_v1', key);
-}
-  
+function getAdminKeySession() {return sessionStorage.getItem('admin_key_v1') || null;}
+function setAdminKeySession(key) {if (!key) sessionStorage.removeItem('admin_key_v1');else sessionStorage.setItem('admin_key_v1', key);}
 async function promptAndValidateAdminKey(){
-  // if already in session, return it
-  const existing = getAdminKeySession();
-  if (existing) return existing;
-
+  const existing = getAdminKeySession(); if (existing) return existing;
   while (true) {
-    const input = prompt('Nhập ADMIN_KEY (sẽ chỉ lưu nếu hợp lệ). Ấn Cancel để hủy.');
+    const input = prompt('Nhập mật khẩu.');
     if (!input) return null; // user canceled or empty
-
     const trimmed = input.trim();
-    if (!trimmed) { alert('Key rỗng — nhập lại hoặc hủy'); continue; }
-
+    if (!trimmed) { alert('Mật khẩu rỗng. Nhập lại?'); continue; }
     try {
-      // Validate using POST /refresh-manifest (requires admin key)
       const url = WORKER_BASE + '/refresh-manifest';
       const res = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': trimmed
-        },
+        headers: {'Content-Type': 'application/json','x-api-key': trimmed},
         cache: 'no-store',
         body: JSON.stringify({ now: Date.now() })
       });
-
-      // Accept only explicit 200
       if (res.status === 200) {
-        // OK -> save and refresh manifest client-side
         setAdminKeySession(trimmed);
         try { await fetchManifest(); } catch (e) { /* ignore fetchManifest error */ }
         return trimmed;
@@ -252,7 +233,6 @@ async function promptAndValidateAdminKey(){
         continue;
       }
     } catch (err) {
-      // network / fetch error
       console.warn('Error validating admin key:', err);
       alert('Lỗi mạng khi kiểm tra admin key. Thử lại?');
       continue;
@@ -312,7 +292,7 @@ async function fetchManifest({ forceRefresh=false }={}) {
   try {
     logStatus('Loading manifest...');
     if(forceRefresh){
-      const key = await promptAndValidateAdminKey(); if(!key){ alert('Hủy: cần ADMIN_KEY'); return; }
+      const key = await promptAndValidateAdminKey(); if(!key) return; 
       const r = await fetch(WORKER_BASE + '/refresh-manifest', { method:'POST', headers:{ 'x-api-key': key }});
       if(!r.ok){ const t=await r.text().catch(()=>r.statusText); throw new Error('Refresh failed: ' + t); }
       manifestRaw = await r.json();
@@ -450,7 +430,7 @@ function markGroupDone(groupEl, ok=true, msg='OK'){ groupEl.barFill.style.width 
 /* DELETE with progress: call permanent-delete per item and refresh manifest (force) after delete */
 async function performBulkDelete(){
   if(selectedItems.size === 0) return alert('Chưa chọn mục để xóa');
-  const key = await promptAndValidateAdminKey(); if(!key){ alert('Hủy: cần ADMIN_KEY'); return; }
+  const key = await promptAndValidateAdminKey(); if(!key) return; 
   if(!confirm('Xác nhận xóa đã chọn?')) return;
 
   const items = Array.from(selectedItems).map(s=>{ const [size, barcode] = s.split('|'); return { size, barcode }; });
@@ -582,7 +562,7 @@ function renderAdd(){
   addRowBtn.onclick = ()=> addRow();
 
   uploadAllBtn.onclick = async ()=>{
-    const key = await promptAndValidateAdminKey(); if(!key){ alert('Hủy: cần ADMIN_KEY'); return; }
+    const key = await promptAndValidateAdminKey(); if(!key) return; 
     const rows = Array.from(tbody.querySelectorAll('tr'));
     if(rows.length===0) return alert('Chưa có dòng nào để upload');
 
@@ -732,7 +712,7 @@ searchInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') doSearch(); }
 function doSearch(){ const q = (searchInput.value||'').trim().toLowerCase(); if(!q){ alert('Nhập barcode để tìm'); return; } const matches = []; for(const s of manifest.sizes) for(const b of s.barcodes) if(String(b.code).toLowerCase().includes(q)) matches.push({ size: s.size, barcode: b }); if(matches.length===0){ alert('Không tìm thấy'); return; } const first = matches[0]; activeTab = 'size:' + first.size; document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); const tb = Array.from(document.querySelectorAll('.tab')).find(t=>t.textContent.includes(first.size)); if(tb) tb.classList.add('active'); renderAccording(); setTimeout(()=>{ const cards = Array.from(document.querySelectorAll('.card img')); for(const img of cards){ if(img.alt === first.barcode.code){ img.scrollIntoView({behavior:'smooth', block:'center'}); break; } } }, 300); }
 
 /* refresh & clear key */
-refreshBtn.onclick = async ()=> { try{ const key = await promptAndValidateAdminKey(); if(!key){ alert('Hủy: cần ADMIN_KEY'); return; } const r = await fetch(WORKER_BASE + '/refresh-manifest', { method:'POST', headers:{ 'x-api-key': key }}); if(!r.ok){ const t = await r.text().catch(()=>r.statusText); throw new Error('Refresh failed: ' + t); } await fetchManifest(); alert('Manifest rebuilt'); } catch(err){ console.error(err); alert('Refresh error: ' + err.message); } };
+refreshBtn.onclick = async ()=> { try{ const key = await promptAndValidateAdminKey(); if(!key) return; const r = await fetch(WORKER_BASE + '/refresh-manifest', { method:'POST', headers:{ 'x-api-key': key }}); if(!r.ok){ const t = await r.text().catch(()=>r.statusText); throw new Error('Refresh failed: ' + t); } await fetchManifest(); alert('Manifest rebuilt'); } catch(err){ console.error(err); alert('Refresh error: ' + err.message); } };
 //clearKeyBtn.onclick = ()=> { setAdminKeySession(null); alert('Admin key đã xóa khỏi session'); };
 
 /* share single card */
