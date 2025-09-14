@@ -221,7 +221,7 @@ let manifestMap = {};
 let activeTab = 'all';
 let selectedItems = new Set();
 let multiSelectMode = false;
-let priceSortMode = null; // 'asc' | 'desc' | null
+let priceSortMode = asc; // 'asc' | 'desc' | null
 
 /* session admin key */
 function getAdminKeySession() {return sessionStorage.getItem('admin_key_v1') || null;}
@@ -951,7 +951,7 @@ function handleScroll(){ const y = window.scrollY || window.pageYOffset || docum
 window.addEventListener('scroll', handleScroll, { passive: true });
 
 /* init */
-async function init(){ await fetchManifest(); updateBodyMultiselectClass(); floatDelete.style.display = 'none'; handleScroll(); }
+async function init(){ priceSortMode = 'asc'; await fetchManifest(); updateBodyMultiselectClass(); floatDelete.style.display = 'none'; handleScroll(); renderAccording();}
 init();
 
 </script>
