@@ -221,7 +221,7 @@ let manifestMap = {};
 let activeTab = 'all';
 let selectedItems = new Set();
 let multiSelectMode = false;
-let priceSortMode = asc; // 'asc' | 'desc' | null
+let priceSortMode = 'asc'; // 'asc' | 'desc' | null
 
 /* session admin key */
 function getAdminKeySession() {return sessionStorage.getItem('admin_key_v1') || null;}
