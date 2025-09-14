@@ -211,7 +211,64 @@ const groupsContainer = document.getElementById('groupsContainer');
 const overallBar = document.getElementById('overallBar');
 const overallPercent = document.getElementById('overallPercent');
 const closeProgressBtn = document.getElementById('closeProgressBtn');
+// --- PROGRESS TOGGLE / show-hide improvements ---
+// (chèn ngay sau khi khai báo progressPanel, groupsContainer, overallBar, overallPercent, closeProgressBtn)
 
+//
+// create a small toggle button that is always visible so user can "Hiện" panel khi đã ẩn.
+// position: just above the progress panel (adjust bottom if collides)
+const toggleProgressBtn = document.createElement('button');
+toggleProgressBtn.id = 'toggleProgressBtn';
+toggleProgressBtn.className = 'btn';
+toggleProgressBtn.style.position = 'fixed';
+toggleProgressBtn.style.right = '12px';
+toggleProgressBtn.style.bottom = '86px'; // nếu cần đẩy lên để không chồng floatDelete
+toggleProgressBtn.style.zIndex = '151';
+toggleProgressBtn.style.padding = '8px 10px';
+toggleProgressBtn.style.borderRadius = '10px';
+toggleProgressBtn.textContent = progressPanel.classList.contains('open') ? 'Ẩn' : 'Hiện';
+document.body.appendChild(toggleProgressBtn);
+
+// utility to update both the toggle button and the in-panel button label
+function setProgressToggleLabel() {
+  const isOpen = progressPanel.classList.contains('open');
+  toggleProgressBtn.textContent = isOpen ? 'Ẩn' : 'Hiện';
+  if (closeProgressBtn) closeProgressBtn.textContent = isOpen ? 'Ẩn' : 'Hiện';
+}
+
+// override show/hide so label luôn đồng bộ
+function showProgressPanel() {
+  progressPanel.classList.add('open');
+  progressPanel.setAttribute('aria-hidden', 'false');
+  progressPanel.style.display = 'block';
+  setProgressToggleLabel();
+}
+function hideProgressPanel() {
+  progressPanel.classList.remove('open');
+  progressPanel.setAttribute('aria-hidden', 'true');
+  progressPanel.style.display = 'none';
+  setProgressToggleLabel();
+}
+
+// initialize state & labels
+setProgressToggleLabel();
+
+// click handlers: both toggle and the in-panel close button toggle the panel
+toggleProgressBtn.addEventListener('click', () => {
+  if (progressPanel.classList.contains('open')) hideProgressPanel();
+  else showProgressPanel();
+});
+
+// if you already had closeProgressBtn.onclick assigned earlier, replace/override it:
+if (closeProgressBtn) {
+  closeProgressBtn.addEventListener('click', () => {
+    if (progressPanel.classList.contains('open')) hideProgressPanel();
+    else showProgressPanel();
+  });
+}
+
+// optional: when showing progress programmatically, ensure the toggle label updates
+// (if you used showProgressPanel()/hideProgressPanel() earlier in code, they now update label)
 const floatDelete = document.getElementById('floatDelete');
 const floatDeleteBtn = document.getElementById('floatDeleteBtn');
 
