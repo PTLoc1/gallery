@@ -191,6 +191,7 @@ img{ max-width:100%; display:block }
 
 <script>
 /* CONFIG */
+const R2_PUBLIC_BASE = "https://pub-9a763a2453ba41939860c4caded896a0.r2.dev";
 const WORKER_BASE = "https://shoes-worker.lapproak0.workers.dev";
 const PREFIX = "Shoes";
 
@@ -373,7 +374,7 @@ function makeCard(size, bc, withCheckbox=false){
   const thumbName = (Array.isArray(bc.images) && bc.images.find(x=>/thumb/i.test(x))) || (Array.isArray(bc.images)? bc.images[0] : null) || 'thumb.jpeg';
   const encSize = encodeURIComponent(String(size).trim());
   const encCode = encodeURIComponent(String(bc.code).trim());
-  const src = `${WORKER_BASE}/${PREFIX}/${encSize}/${encCode}/${encodeURIComponent(thumbName)}`;
+  const src = `${R2_PUBLIC_BASE}/${PREFIX}/${encSize}/${encCode}/${encodeURIComponent(thumbName)}`;
 
   const wrap = document.createElement('div'); wrap.className='thumb-wrap';
   const img = document.createElement('img'); img.src = src; img.alt = bc.code;
@@ -514,7 +515,7 @@ async function openDetails(size, bc){
   for(const fn of imgs){
     const imWrap = document.createElement('div');
     const im = document.createElement('img');
-    im.src = `${WORKER_BASE}/${PREFIX}/${encodeURIComponent(String(size).trim())}/${encodeURIComponent(String(bc.code).trim())}/${encodeURIComponent(fn)}`;
+    im.src = `${R2_PUBLIC_BASE}/${PREFIX}/${encodeURIComponent(String(size).trim())}/${encodeURIComponent(String(bc.code).trim())}/${encodeURIComponent(fn)}`;
     im.style.width='100%'; im.style.height='100%'; im.style.objectFit='cover';
     imWrap.appendChild(im);
     div.appendChild(imWrap);
@@ -918,31 +919,98 @@ function doSearch(){ const q = (searchInput.value||'').trim().toLowerCase(); if(
 refreshBtn.onclick = async ()=> { try{ const key = await promptAndValidateAdminKey(); if(!key) return; const r = await fetch(WORKER_BASE + '/refresh-manifest', { method:'POST', headers:{ 'x-api-key': key }}); if(!r.ok){ const t = await r.text().catch(()=>r.statusText); throw new Error('Refresh failed: ' + t); } await fetchManifest(); alert('Manifest rebuilt'); } catch(err){ console.error(err); alert('Refresh error: ' + err.message); } };
 
 /* share single card */
-async function shareMultipleImages(size, barcodeObj){
-  try{
-    showModal('Chuẩn bị chia sẻ', '<div id="prepareMsg">Đang lấy ảnh, vui lòng chờ…</div>');
+// shareMultipleImages - tải nhiều ảnh song song, xử lý retry, fallback, rồi gọi navigator.share
+async function shareMultipleImages(size, barcodeObj) {
+  try {
+    //console.log('shareMultipleImages: chuẩn bị lấy ảnh...');
     const encSize = encodeURIComponent(String(size).trim());
-    const encCode = encodeURIComponent(String(barcodeObj.code).trim());
-    const urls = (barcodeObj.images || []).map(f => `${WORKER_BASE}/${PREFIX}/${encSize}/${encCode}/${encodeURIComponent(f)}`);
-    const files = [];
-    for(const u of urls){
-      try{
-        const r = await fetch(u, { mode: 'cors' });
-        if(!r.ok){ console.warn('Fetch failed', r.status, u); continue; }
-        const blob = await r.blob();
-        const fname = decodeURIComponent(u.split('/').pop());
-        files.push(new File([blob], fname, { type: blob.type }));
-      } catch(e){ console.warn('fetch error', e, u); continue; }
+    const encCode = encodeURIComponent(String(barcodeObj.code || '').trim());
+    const names = Array.isArray(barcodeObj.images) ? barcodeObj.images.slice() : [];
+    if (names.length === 0) {
+      console.warn('Không có ảnh để chia sẻ');
+      return alert('Không có ảnh để chia sẻ');
     }
-    document.getElementById('modalClose').click();
-    if(files.length === 0) return alert('Không thu thập được file nào để chia sẻ');
+
+    const concurrency = 10;
+    const files = [];
+    let idx = 0;
+
+    // fetch 1 file via worker, return File or null
+    async function fetchOne(name) {
+      const fn = String(name || '').trim();
+      const url = `${WORKER_BASE}/${PREFIX}/${encSize}/${encCode}/${encodeURIComponent(fn)}`;
+      try {
+        const res = await fetch(url, { mode: 'cors' });
+        if (!res.ok) {
+          console.warn('fetch failed', res.status, url);
+          return null;
+        }
+        const blob = await res.blob();
+        return new File([blob], fn || (decodeURIComponent(url.split('/').pop())), { type: blob.type || 'application/octet-stream' });
+      } catch (e) {
+        console.warn('fetch error', url, e);
+        return null;
+      }
+    }
+
+    // simple concurrency pool
+    const runners = Array.from({ length: Math.min(concurrency, names.length) }, async () => {
+      while (true) {
+        const i = idx++;
+        if (i >= names.length) break;
+        const f = await fetchOne(names[i]);
+        if (f) files.push(f);
+      }
+    });
+    await Promise.all(runners);
+
+    // (modal removed) thay bằng log
+    console.log('shareMultipleImages: thu thập xong', files.length, 'file(s)');
+
+    if (files.length === 0) {
+      // fallback: share worker URLs as text
+      const urls = names.map(n => `${WORKER_BASE}/${PREFIX}/${encSize}/${encCode}/${encodeURIComponent(String(n).trim())}`);
+      try {
+        await navigator.share({ title: `Ảnh ${barcodeObj.code || ''}`, text: urls.join('\n') });
+        return;
+      } catch (e) {
+        console.warn('fallback share URLs failed', e);
+        return alert('Không thu thập được file nào để chia sẻ');
+      }
+    }
+
+    // check canShare if available
     try {
-      if(navigator.canShare && navigator.canShare({ files })){
-        await navigator.share({ files, title: 'Images ' + barcodeObj.code });
+      if (navigator.canShare && !navigator.canShare({ files })) {
+        // cannot share files -> fallback to first URL
+        const first = `${WORKER_BASE}/${PREFIX}/${encSize}/${encCode}/${encodeURIComponent(String(names[0]).trim())}`;
+        try {
+          await navigator.share({ title: `Ảnh ${barcodeObj.code || ''}`, text: first });
+        } catch (e) {
+          console.warn('fallback to first URL failed', e);
+          alert('Trình duyệt không hỗ trợ chia sẻ file trực tiếp');
+        }
         return;
       }
-    } catch(err){ console.warn('navigator.share failed:', err); }
-  } catch(err){ console.error('shareMultipleImages error', err); try { document.getElementById('modalClose').click(); } catch(e){} alert('Lỗi khi chia sẻ: ' + (err.message || err)); }
+    } catch (e) {
+      console.warn('navigator.canShare check error (ignored)', e);
+    }
+
+    // attempt share files
+    try {
+      await navigator.share({ files, title: `Ảnh ${barcodeObj.code || ''}` });
+    } catch (e) {
+      console.warn('share files failed, fallback to URLs', e);
+      const urls = names.map(n => `${WORKER_BASE}/${PREFIX}/${encSize}/${encCode}/${encodeURIComponent(String(n).trim())}`);
+      try { await navigator.share({ title: `Ảnh ${barcodeObj.code || ''}`, text: urls.join('\n') }); }
+      catch (e2) {
+        console.warn('fallback share URLs also failed', e2);
+      }
+    }
+  } catch (err) {
+    console.error('shareMultipleImages error', err);
+    alert('Lỗi khi chia sẻ: ' + (err && err.message ? err.message : String(err)));
+  }
 }
 
 /* header hide/show: header shown only when at very top */
