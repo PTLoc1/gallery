@@ -395,7 +395,6 @@ async function exportExcelFromModel() {
   try {
     // ensure manifest up-to-date (non-force)
     await fetchManifest();
-
     // build rows with size + thumb URL
     const rows = [];
     for (const s of (manifest.sizes || [])) {
@@ -541,7 +540,7 @@ function formatMoney(val){
   if(val === null || val === undefined || val === '') return '—';
   const s = String(val).replace(/[^\d]/g,'');
   if(!s) return '—';
-  return s.replace(/\B(?=(\d{3})+(?!\d))/g, ".") + ' đ';
+  return s.replace(/\B(?=(\d{3})+(?!\d))/g, ".") + 'k đ';
 }
 function unformatMoney(s){
   return String(s||'').replace(/[^\d]/g,'').trim();
@@ -677,7 +676,7 @@ function renderActionsBar(){
     left.appendChild(toggleBtn);
 
     // sort by price inline control
-       // sort by price inline control (only Asc/Desc; no "None", no separate button)
+    // sort by price inline control (only Asc/Desc; no "None", no separate button)
     const sortWrap = document.createElement('div');
     sortWrap.className = 'sort-inline';
     const sortSel = document.createElement('select');
@@ -1209,7 +1208,6 @@ async function shareMultipleImages(size, barcodeObj) {
 const headerEl = document.getElementById('pageHeader');
 function handleScroll(){ const y = window.scrollY || window.pageYOffset || document.documentElement.scrollTop; if(y === 0) headerEl.classList.remove('header-hidden'); else headerEl.classList.add('header-hidden'); }
 window.addEventListener('scroll', handleScroll, { passive: true });
-/* init */
 /* init */
 async function init(){ priceSortMode = 'asc'; await fetchManifest(); updateBodyMultiselectClass(); floatDelete.style.display = 'none'; handleScroll(); renderAccording();}
 init();
