@@ -91,7 +91,7 @@ body.dark .modal-content{ background:#0f1315; color:#e6e9eb }
 .modal-body{ padding:10px; overflow:auto }
 .detail-grid{ display:grid; grid-template-columns: repeat(4,1fr); gap:8px }
 @media(max-width:900px){ .detail-grid{ grid-template-columns: repeat(3,1fr); } }
-/*@media(max-width:480px){ .detail-grid{ grid-template-columns: repeat(2,1fr); } }*/
+@media(max-width:480px){ .detail-grid{ grid-template-columns: repeat(2,1fr); } }
 
 /* progress */
 .progress-panel { position: fixed; right: 12px; bottom: 12px; padding: 10px; width: 360px; max-width: calc(100% - 24px); background: rgba(255,255,255,0.98); border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.12); z-index: 140; display: none; font-size:13px; }
@@ -126,8 +126,8 @@ body.dark .modal-content{ background:#0f1315; color:#e6e9eb }
 
 /* responsive */
 @media (min-width: 600px) and (max-width: 999px) { .grid{ grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; } }
-@media (min-width: 1000px) { .grid{ grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:12px; } }
-@media (max-width:480px){ .progress-panel{ width: 92%; right: 4%; } .grid{ grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1000px) { .grid{ grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:12px; } }
+@media (max-width: 480px){ .progress-panel{ width: 92%; right: 4%; } .grid{ grid-template-columns: repeat(3, 1fr); } }
 
 img{ max-width:100%; display:block }
 
