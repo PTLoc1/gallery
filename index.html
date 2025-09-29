@@ -861,32 +861,170 @@ function renderActionsBar(){
   const left = document.createElement('div');
 
   if(activeTab !== 'add'){
-    const toggleBtn = document.createElement('button'); toggleBtn.className='btn tab-like';
-    toggleBtn.textContent = multiSelectMode ? 'Hủy' : 'Chọn xóa';
-    toggleBtn.onclick = ()=>{ multiSelectMode = !multiSelectMode; if(!multiSelectMode) selectedItems.clear(); updateBodyMultiselectClass(); floatDelete.style.display = multiSelectMode ? 'block' : 'none'; renderAccording(); };
+    // toggle + "Chọn theo excel" + sort control (REPLACE phần cũ)
+const toggleBtn = document.createElement('button');
+toggleBtn.className = 'btn tab-like';
+toggleBtn.textContent = multiSelectMode ? 'Hủy' : 'Chọn xóa';
 
-    left.appendChild(toggleBtn);
+// helper đảm bảo class body cho multiselect
+function updateBodyMultiselectClass(){
+  document.body.classList.toggle('body-multiselect', !!multiSelectMode);
+}
 
-    // sort by price inline control
-    // sort by price inline control (only Asc/Desc; no "None", no separate button)
-    const sortWrap = document.createElement('div');
-    sortWrap.className = 'sort-inline';
-    const sortSel = document.createElement('select');
-    sortSel.className = 'select-small';
-    const optAsc = document.createElement('option'); optAsc.value = 'asc'; optAsc.textContent = 'Giá tăng dần';
-    const optDesc = document.createElement('option'); optDesc.value = 'desc'; optDesc.textContent = 'Giá giảm dần';
-    sortSel.appendChild(optAsc);
-    sortSel.appendChild(optDesc);
-    // default to asc if priceSortMode not set
-    sortSel.value = priceSortMode || 'asc';
-    sortSel.onchange = ()=> {
-      const val = sortSel.value;
-      priceSortMode = val; // always 'asc' or 'desc'
-      if(activeTab === 'all') applyPriceSortAndRender(priceSortMode);
-      else renderAccording();
-    };
-    sortWrap.appendChild(sortSel);
-    left.appendChild(sortWrap);
+// tạo nút "Chọn theo excel"
+const chooseExcelBtn = document.createElement('button');
+chooseExcelBtn.className = 'btn tab-like';
+chooseExcelBtn.textContent = 'Chọn theo excel';
+chooseExcelBtn.style.display = multiSelectMode ? 'inline-block' : 'none';
+chooseExcelBtn.style.marginLeft = '10px'; // khoảng cách giữa nút excel và nút Hủy
+// không kiểm tra login ở đây (theo yêu cầu) — nếu bạn muốn giới hạn lại, thêm kiểm tra getRole() tại đây
+chooseExcelBtn.onclick = async () => {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.xlsx,.xls';
+  input.onchange = async (e) => {
+    const f = e.target.files && e.target.files[0];
+    if(!f) return;
+    try {
+      const ab = await f.arrayBuffer();
+      const wb = XLSX.read(ab, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1 }); // array of arrays, first row = header
+      if(!rows || rows.length === 0) return alert('File Excel rỗng.');
+
+      // try find header indices by fuzzy match; fall back to B=1, C=2, I=8 (zero-based indexes)
+      const header = (rows[0] || []).map(h => (h || '').toString().trim().toLowerCase());
+      function findIndex(candidates){
+        for(const cand of candidates){
+          const lc = cand.toLowerCase();
+          const idx = header.findIndex(h => h === lc || (h && h.indexOf(lc) !== -1));
+          if(idx >= 0) return idx;
+        }
+        return -1;
+      }
+      const idxGroup = findIndex(['nhóm hàng(3 cấp)','nhóm hàng','nhóm','nhóm hàng 3 cấp']); // col B prefer
+      const idxCode  = findIndex(['mã hàng','mã','mã sản phẩm','code']) ;
+      const idxStock = findIndex(['tồn kho','tồn','quantity','on hand','stock']); // col I prefer
+      const colGroup = idxGroup >= 0 ? idxGroup : 1;
+      const colCode  = idxCode  >= 0 ? idxCode  : 2;
+      const colStock = idxStock >= 0 ? idxStock : 8;
+
+      const codesSet = new Set();
+      for(let i = 1; i < rows.length; i++){
+        const row = rows[i] || [];
+        const rawGroup = (row[colGroup] === undefined || row[colGroup] === null) ? '' : String(row[colGroup]).trim();
+        const rawStock = row[colStock];
+        const rawCode = (row[colCode] === undefined || row[colCode] === null) ? '' : String(row[colCode]).trim();
+
+        // normalize group: match words 'giày' and 'bóng rổ' (case-insensitive, ignore accents)
+        const groupNorm = rawGroup.toLowerCase();
+        const isBasket = groupNorm.includes('giày') && groupNorm.includes('bóng') && groupNorm.includes('rổ') || groupNorm === 'giày bóng rổ' || groupNorm.includes('giày bóng rổ');
+
+        // check stock == 0 (handle number or string)
+        let isZero = false;
+        if (rawStock === 0 || rawStock === '0' || rawStock === '0.0' || rawStock === 0.0) isZero = true;
+        else {
+          const num = Number(String(rawStock || '').replace(/,/g,'.').trim());
+          if (!isNaN(num) && num === 0) isZero = true;
+        }
+
+        if (isBasket && isZero && rawCode) codesSet.add(String(rawCode));
+      }
+
+      if (codesSet.size === 0){
+        alert('Không tìm thấy mã nào thỏa điều kiện (Nhóm="Giày Bóng Rổ" và Tồn kho=0). Hãy kiểm tra file hoặc header.');
+        return;
+      }
+
+      const codes = Array.from(codesSet);
+      const preview = codes.slice(0, 200).join(', '); // limit length
+      //if(!confirm(`Tìm được ${codes.length} mã:\n${preview}${codes.length>200?'\n... (bỏ qua phần còn lại)': ''}\n\nOK để tích những mã này trên web?`)) return;
+
+      // bật multiSelectMode và chọn các mã tìm thấy (nếu có trong manifest)
+      // ensure multiSelectMode on and add to selectedItems for matching sizes
+multiSelectMode = true;
+
+const matched = [];   // unique codes that exist in manifest
+const notFound = [];  // codes not found at all
+
+for (const rawCode of codes) {
+  const code = String(rawCode || '').trim();
+  if (!code) continue;
+  let foundAny = false;
+
+  for (const s of (manifest && manifest.sizes || [])) {
+    const sizeKey = String(s.size || '').trim();
+    if (manifestMap[sizeKey] && manifestMap[sizeKey][code]) {
+      // add every matching size|code pair (so user can delete exact items)
+      selectedItems.add(`${sizeKey}|${code}`);
+      foundAny = true;
+    }
+  }
+
+  if (foundAny) {
+    if (!matched.includes(code)) matched.push(code);
+  } else {
+    notFound.push(code);
+  }
+}
+
+// show summary to user
+const previewMatched = matched.slice(0, 200).join(', ');
+let summary = `Tổng mã trong file: ${codes.length}\nMã khớp trên manifest: ${matched.length}\nMã không tìm thấy: ${notFound.length}\n\nMã khớp : ${previewMatched}`;
+if (matched.length > 200) summary += '\n... (bỏ qua phần còn lại)';
+if (notFound.length > 0) summary += `\n\nMột số mã NOT FOUND: ${notFound.slice(0,20).join(', ')}${notFound.length>20?'\n...':''}`;
+
+alert(summary);
+
+// reflect UI
+try { updateBodyMultiselectClass(); } catch(e){/* optional */ }
+floatDelete.style.display = 'block';
+if (typeof chooseExcelBtn !== 'undefined' && chooseExcelBtn) chooseExcelBtn.style.display = 'inline-block';
+renderAccording();
+
+      updateBodyMultiselectClass();
+      floatDelete.style.display = 'block';
+      // ensure chooseExcelBtn visible now
+      chooseExcelBtn.style.display = 'inline-block';
+      renderAccording();
+    } catch(err){
+      console.error('Import excel error', err);
+      alert('Lỗi khi đọc file Excel: ' + (err && err.message ? err.message : err));
+    }
+  };
+  input.click();
+};
+
+// append toggle + chooseExcel + sort
+left.appendChild(toggleBtn);
+left.appendChild(chooseExcelBtn);
+
+// sort by price inline control (unchanged)
+const sortWrap = document.createElement('div');
+sortWrap.className = 'sort-inline';
+const sortSel = document.createElement('select');
+sortSel.className = 'select-small';
+const optAsc = document.createElement('option'); optAsc.value = 'asc'; optAsc.textContent = 'Giá tăng dần';
+const optDesc = document.createElement('option'); optDesc.value = 'desc'; optDesc.textContent = 'Giá giảm dần';
+sortSel.appendChild(optAsc); sortSel.appendChild(optDesc);
+sortSel.value = priceSortMode || 'asc';
+sortSel.onchange = ()=>{ priceSortMode = sortSel.value; if(activeTab === 'all') applyPriceSortAndRender(priceSortMode); else renderAccording(); };
+sortWrap.appendChild(sortSel);
+left.appendChild(sortWrap);
+
+// override toggle behavior (uses closure so chooseExcelBtn can be updated)
+toggleBtn.onclick = ()=> {
+  multiSelectMode = !multiSelectMode;
+  if(!multiSelectMode) selectedItems.clear();
+  updateBodyMultiselectClass();
+  floatDelete.style.display = multiSelectMode ? 'block' : 'none';
+  // show chooseExcelBtn only when multiSelectMode ON
+  chooseExcelBtn.style.display = multiSelectMode ? 'inline-block' : 'none';
+  // update label text
+  toggleBtn.textContent = multiSelectMode ? 'Hủy' : 'Chọn xóa';
+  renderAccording();
+};
+
 
   } else {
     const spacer = document.createElement('div'); spacer.style.height='1px'; spacer.style.display='inline-block'; left.appendChild(spacer);
