@@ -284,38 +284,37 @@ async function loadGlobalVonMap(force = false) {
 /* session admin key */
 function getAdminKeySession() {return sessionStorage.getItem('admin_key_v1') || null;}
 function setAdminKeySession(key) {if (!key) sessionStorage.removeItem('admin_key_v1');else sessionStorage.setItem('admin_key_v1', key);} 
+// Thay thế promptAndValidateAdminKey() bằng hàm này
 async function promptAndValidateAdminKey(){
   const existing = getAdminKeySession(); if (existing) return existing;
   while (true) {
     const input = prompt('Nhập mật khẩu:');
-    if (!input) return null; // user canceled or empty
+    if (!input) return null;
     const trimmed = input.trim();
     if (!trimmed) { alert('Mật khẩu rỗng. Nhập lại?'); continue; }
     try {
-      const url = WORKER_BASE + '/refresh-manifest';
-      const res = await fetch(url, {
+      const res = await fetch(WORKER_BASE + '/validate-key', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json','x-api-key': trimmed},
+        headers: { 'Content-Type': 'application/json', 'x-api-key': trimmed },
         cache: 'no-store',
         body: JSON.stringify({ now: Date.now() })
       });
       if (res.status === 200) {
         setAdminKeySession(trimmed);
-        try { await fetchManifest(); } catch (e) { /* ignore fetchManifest error */ }
+        // optional: refresh manifest in background without blocking UI
+        fetchManifest().catch(()=>{});
         return trimmed;
       } else if (res.status === 401) {
         alert('Admin key không hợp lệ (401). Vui lòng thử lại.');
-        continue; // prompt again
+        continue;
       } else {
-        // other non-200 statuses
-        let txt = '';
-        try { txt = await res.text(); } catch(e){ /* ignore */ }
+        const txt = await res.text().catch(()=> '');
         alert('Lỗi khi kiểm tra key. Status: ' + res.status + (txt ? (' — ' + txt) : ''));
         continue;
       }
     } catch (err) {
       console.warn('Error validating admin key:', err);
-      alert('Lỗi mạng khi kiểm tra admin key. Thử lại?');
+      if (!confirm('Lỗi mạng khi kiểm tra admin key. Thử lại?')) return null;
       continue;
     }
   }
@@ -368,33 +367,35 @@ async function handleLoginClick(){
       updateRoleVisibility();
       return;
     }
-
-    // treat input as admin-key candidate: validate by calling refresh-manifest
-    try{
-      const res = await fetch(WORKER_BASE + '/refresh-manifest', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': input },
-        body: JSON.stringify({ now: Date.now() }),
-        cache: 'no-store'
-      });
-      if(res.ok){
-        // save key (so further actions that need it can use it), but role=limited (UI restricted)
-        setAdminKeySession(input);
-        setRole('limited');
-        updateRoleVisibility();
-        return;
-      } else {
-        alert('mật khẩu không hợp lệ.');
-        continue;
-      }
-    } catch(e){
-      console.warn('validate key error', e);
-      alert('Lỗi mạng khi kiểm tra key. Thử lại.');
-      continue;
-    }
+    // treat input as admin-key candidate: validate by calling validate-key (lightweight)
+try{
+  const res = await fetch(WORKER_BASE + '/validate-key', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': input },
+    body: JSON.stringify({ now: Date.now() }),
+    cache: 'no-store'
+  });
+  if (res.status === 200) {
+    // key hợp lệ (lightweight check) -> limited
+    setAdminKeySession(input);
+    setRole('limited');
+    updateRoleVisibility();
+    return;
+  } else if (res.status === 401) {
+    alert('Mật khẩu không hợp lệ.');
+    continue;
+  } else {
+    const txt = await res.text().catch(()=> '');
+    alert('Lỗi khi kiểm tra key. Status: ' + res.status + (txt ? (' — ' + txt) : ''));
+    continue;
+  }
+} catch (e) {
+  console.warn('validate key error', e);
+  alert('Lỗi mạng khi kiểm tra key. Thử lại.');
+  continue;
+}
   }
 }
-
 /* ensureAuthForAction:
  - if anon => call handleLoginClick() (so UI updates via login button flow)
  - returns { ok:true/false, key: string|null }
@@ -799,7 +800,7 @@ if(vonSpan){
     }
 
     // 2) Sau khi cập nhật entry đơn, gọi refresh-manifest để rebuild toàn bộ manifest (nên làm)
-    try {
+    /*try {
       const r2 = await fetch(WORKER_BASE + '/refresh-manifest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': adminKey },
@@ -814,7 +815,7 @@ if(vonSpan){
       }
     } catch (e) {
       console.warn('refresh-manifest error', e);
-    }
+    }*/
 
     // 3) reload client manifest để UI cập nhật
     try { await fetchManifest(); } catch(e){ console.warn('fetchManifest failed after save', e); }
@@ -1085,11 +1086,11 @@ async function performBulkDelete(){
   }
 
   // rebuild manifest on worker (requires admin key)
-  try{
-    const r = await fetch(WORKER_BASE + '/refresh-manifest', { method: 'POST', headers: { 'x-api-key': key } });
-    if(!r.ok) console.warn('refresh-manifest returned', r.status);
-  } catch(e){ console.warn('refresh-manifest error', e); }
-
+  /*try{
+  const r = await fetch(WORKER_BASE + '/refresh-manifest', { method: 'POST', headers: { 'x-api-key': key } });
+  if(!r.ok) console.warn('refresh-manifest returned', r.status);
+} catch(e){ console.warn('refresh-manifest error', e); }
+*/
   // fetch fresh manifest (non-force)
   try { await fetchManifest(); } catch(e){ console.warn('fetchManifest after delete failed', e); }
 
