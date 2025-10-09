@@ -1268,8 +1268,8 @@ const sizeVal = sizeSelect ? sizeSelect.value : (newSizeInput ? newSizeInput.val
       if(ri.inputThumb && ri.inputThumb.files && ri.inputThumb.files[0]) thumbFile = ri.inputThumb.files[0];
       else if(ri.tr.__prefilledThumbFile) thumbFile = ri.tr.__prefilledThumbFile;
       else if(detailsFiles.length>0) thumbFile = detailsFiles[0];
-      if(thumbFile){ const processed = await convertImageFileToJpeg(thumbFile); const thumb = new File([await processed.arrayBuffer()], 'thumb.jpeg', { type: 'image/jpeg' }); prepared.push({ file: thumb, remoteName: 'thumb.jpeg' }); }
-      for(const f of detailsFiles){ const p = await convertImageFileToJpeg(f); prepared.push({ file: p, remoteName: p.name }); }
+      if(thumbFile){ const thumb = new File([await thumbFile.arrayBuffer()], 'thumb.jpeg', { type: 'image/jpeg' }); prepared.push({ file: thumb, remoteName: 'thumb.jpeg' }); }
+      for(const f of detailsFiles){ prepared.push({ file: f, remoteName: f.name }); }
       groups.push({ size: effectiveSize, barcode: ri.barcode, prepared, price: ri.priceVal || '' });
     }
 if(groups.length === 0) return alert('Không có hàng để upload sau khi áp dụng skip rules');
