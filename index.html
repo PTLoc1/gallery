@@ -47,8 +47,7 @@ body.dark header{ background:#122028 }
 
 header > .controls { display:flex; gap:8px; align-items:center; min-width:0 }
 
-/*.tabs{ display:flex; gap:8px; overflow-x:auto; padding:8px 12px; margin-top:8px; -webkit-overflow-scrolling: touch; box-sizing:border-box; }*/
-.tabs{ display:flex; gap:8px; flex-wrap:wrap; row-gap:8px; padding:8px 12px; margin-top:8px; -webkit-overflow-scrolling: touch; box-sizing:border-box; overflow-y:auto; max-height: calc( (var(--tab-height,40px) + 8px) * 2 ); }
+.tabs{ display:flex; gap:8px; overflow-x:auto; padding:8px 12px; margin-top:8px; -webkit-overflow-scrolling: touch; box-sizing:border-box; }
 .tab{ padding:8px 10px; border-radius:8px; background:var(--tab-bg); border:1px solid var(--tab-border); cursor:pointer; white-space:nowrap; font-size:13px; color:var(--tab-text); }
 .tab.active{ background:var(--accent); color:white; box-shadow:0 2px 8px rgba(0,0,0,0.12) }
 
@@ -668,7 +667,10 @@ function setActiveButton(){ document.querySelectorAll('.tab').forEach(t=>t.class
 function buildTabs(){
   tabsEl.innerHTML = '';
   tabsEl.appendChild(createTabButton('Tất cả','all'));
-  for(const s of manifest.sizes) tabsEl.appendChild(createTabButton(String(s.size), 'size:'+s.size));
+  for (const s of manifest.sizes) {
+  const cleanLabel = String(s.size).replace(/^Size\s*/i, '').trim(); // bỏ tiền tố "Size "
+  tabsEl.appendChild(createTabButton(cleanLabel, 'size:' + s.size));
+	}
   const spacer = document.createElement('div'); spacer.style.flex='1'; tabsEl.appendChild(spacer);
   tabsEl.appendChild(createTabButton('Thêm','add'));
   setActiveButton();
