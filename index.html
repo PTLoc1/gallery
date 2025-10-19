@@ -1737,7 +1737,7 @@ function sanitizeName(s){
 function buildThumbUrl(size, code, thumbName='thumb.jpeg'){
   const encSize = encodeURIComponent(String(size).trim());
   const encCode = encodeURIComponent(String(code).trim());
-  return `${WORKER_BASE}/${PREFIX}/${encSize}/${encCode}/${encodeURIComponent(thumbName)}`;
+  return `${R2_PUBLIC_BASE}/${PREFIX}/${encSize}/${encCode}/${encodeURIComponent(thumbName)}`;
 }
 
 /* open small UI for choosing which sizes / all then export */
