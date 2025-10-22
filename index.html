@@ -488,7 +488,7 @@ async function fetchManifest({ forceRefresh=false }={}) {
     }
     manifest = normalizeManifest(manifestRaw || {});
     buildManifestMap();
-    logStatus('Manifest loaded');
+    logStatus('');
     buildTabs();
   } catch(err){
     console.error(err); logStatus('Không load được manifest: ' + err.message); contentEl.innerHTML='';
