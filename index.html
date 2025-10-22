@@ -219,6 +219,7 @@ img{ max-width:100%; display:block }
 /* CONFIG */
 const R2_PUBLIC_BASE = "https://pub-9a763a2453ba41939860c4caded896a0.r2.dev";
 const WORKER_BASE = "https://test.lapproak0.workers.dev";
+const WORKER_BASE1= "https://shoes-worker.lapproak0.workers.dev";
 const PREFIX = "Shoes";
 
 /* DOM */
@@ -691,7 +692,7 @@ function makeCard(size, bc, withCheckbox=false){
   const thumbName = (Array.isArray(bc.images) && bc.images.find(x=>/thumb/i.test(x))) || (Array.isArray(bc.images)? bc.images[0] : null) || 'thumb.jpeg';
   const encSize = encodeURIComponent(String(size).trim());
   const encCode = encodeURIComponent(String(bc.code).trim());
-  const src = `${WORKER_BASE}/${PREFIX}/${encSize}/${encCode}/${encodeURIComponent(thumbName)}`;
+  const src = `${WORKER_BASE1}/${PREFIX}/${encSize}/${encCode}/${encodeURIComponent(thumbName)}`;
 
   const wrap = document.createElement('div'); wrap.className='thumb-wrap';
   const img = document.createElement('img'); img.src = src; img.alt = bc.code;
@@ -1737,7 +1738,7 @@ function sanitizeName(s){
 function buildThumbUrl(size, code, thumbName='thumb.jpeg'){
   const encSize = encodeURIComponent(String(size).trim());
   const encCode = encodeURIComponent(String(code).trim());
-  return `${R2_PUBLIC_BASE}/${PREFIX}/${encSize}/${encCode}/${encodeURIComponent(thumbName)}`;
+  return `${WORKER_BASE1}/${PREFIX}/${encSize}/${encCode}/${encodeURIComponent(thumbName)}`;
 }
 
 /* open small UI for choosing which sizes / all then export */
