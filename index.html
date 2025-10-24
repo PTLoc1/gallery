@@ -25,7 +25,7 @@ body.dark{ background:#111316; color:#d9dee3 }
 
 #refreshBtn {display: none !important;}
 /* header */
-header{ padding: 9px; background: var(--tab-bg); position: fixed; top: 0; right:0; left:0; z-index: 60; box-shadow: 0 2px 6px rgba(10,10,10,0.06); overflow: visible; transition: transform 0.22s ease; transform: translateY(0);}
+header{ padding: 9px; padding-bottom: 5px; background: var(--tab-bg); position: fixed; top: 0; right:0; left:0; z-index: 60; box-shadow: 0 2px 6px rgba(10,10,10,0.06); overflow: visible; transition: transform 0.22s ease; transform: translateY(0);}
 body.dark header{ background:#122028 }
 
 .top-row{ display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
@@ -37,7 +37,7 @@ body.dark header{ background:#122028 }
 
 header > .controls { display:flex; gap:8px; align-items:center; min-width:0 }
 
-.tabs{ display:flex; gap:8px; overflow-x:auto; padding:8px 12px; margin-top:8px; -webkit-overflow-scrolling: touch; box-sizing:border-box; }
+.tabs{ display:flex; gap:8px; overflow-x:auto; padding:8px 12px; margin-top:4px; -webkit-overflow-scrolling: touch; box-sizing:border-box; }
 .tab{ padding:8px 10px; border-radius:8px; background:var(--tab-bg); border:1px solid var(--tab-border); cursor:pointer; white-space:nowrap; font-size:13px; color:var(--tab-text); }
 .tab.active{ background:var(--accent); color:white; box-shadow:0 2px 8px rgba(0,0,0,0.12) }
 
