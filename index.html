@@ -1557,8 +1557,8 @@ importVonInput.addEventListener('change', async (e) => {
     for (let r = range.s.r + 1; r <= range.e.r; r++) {
       const cellG = ws[XLSX.utils.encode_cell({c:6, r})]; // G
       const cellC = ws[XLSX.utils.encode_cell({c:2, r})]; // C
-      const code = cellG && cellG.v ? String(cellC.v).trim() : '';
-      const von = cellC && (cellC.v !== undefined && cellH.v !== null) ? String(cellH.v).replace(/[^\d]/g,'').trim() : '';
+      const code = cellG && cellG.v ? String(cellG.v).trim() : '';
+      const von = cellC && (cellC.v !== undefined && cellC.v !== null) ? String(cellC.v).replace(/[^\d]/g,'').trim() : '';
       if (code) rows.push({ code, von });
     }
     if (rows.length === 0) return alert('Không tìm thấy dòng hợp lệ trong file.');
