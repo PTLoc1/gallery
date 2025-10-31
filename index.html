@@ -145,9 +145,10 @@ img{ max-width:100%; display:block }
           <button id="authBtn" class="btn tab-like">Đăng nhập</button>
           <button id="themeToggle" class="btn tab-like">Light/Dark</button>
           <button id="refreshBtn" class="btn tab-like">Refresh</button>
+	  <button id="import-von-btn" class="btn tab-like">Import giá vốn</button>
           <button id="btn-export-excel" class="btn tab-like">Xuất Excel</button>
-          <button id="import-von-btn" class="btn tab-like">Import giá vốn</button>
-	<button id="btn-export-thumbs" class="btn tab-like" style="display:none">Xuất thumbnail</button>
+	  <button id="btn-export-thumbs" class="btn tab-like" style="display:none">Xuất thumbnail</button>
+	   <button id="btn-export-delete-log" class="btn tab-like" style="display:none">Xuất Log xóa</button>
         </div>
       </div>
     </div>
@@ -208,7 +209,7 @@ img{ max-width:100%; display:block }
 <script>
 /* CONFIG */
 const R2_PUBLIC_BASE = "https://pub-9a763a2453ba41939860c4caded896a0.r2.dev";
-const WORKER_BASE = "https://test1.lapproak0.workers.dev";
+const WORKER_BASE = "https://test11.lapproak0.workers.dev";
 const PREFIX = "Shoes";
 
 /* DOM */
@@ -332,9 +333,9 @@ function updateRoleVisibility(){
   if(importBtn) importBtn.style.display = (role === 'admin') ? 'inline-block' : 'none';
  // Thumbnail export: visible for any logged-in role (limited OR admin)
   const thumbBtn = document.getElementById('btn-export-thumbs');
-  if(thumbBtn) {
-    thumbBtn.style.display = (role === 'anon') ? 'none' : 'inline-block';
-  }
+  if(thumbBtn) {thumbBtn.style.display = (role === 'anon') ? 'none' : 'inline-block';}
+  const exportDeletedBtn = document.getElementById('btn-export-delete-log');
+  if (exportDeletedBtn) exportDeletedBtn.style.display = (role === 'admin') ? 'inline-block' : 'none';
 }
 
 
@@ -635,6 +636,88 @@ async function exportExcelFromModel() {
 
 document.getElementById('authBtn').addEventListener('click', ()=>{ handleLoginClick(); });
 document.getElementById('btn-export-excel').addEventListener('click', exportExcelFromModel);
+
+// show Export Deleted Log only to admin (reuse updateRoleVisibility pattern)
+const exportDeletedBtn = document.createElement ? document.getElementById('btn-export-delete-log') : null;
+if (exportDeletedBtn) {
+  // display controlled by updateRoleVisibility() earlier — ensure it is visible only for admin:
+  // place visibility rule near updateRoleVisibility(): exportDeletedBtn.style.display = (role === 'admin') ? 'inline-block' : 'none';
+  exportDeletedBtn.addEventListener('click', async () => {
+    const auth = await ensureAuthForAction();
+    if (!auth.ok) return;
+    const key = auth.key;
+    // optionally prompt date range (basic): default last 7 days
+    const end = new Date().toISOString().slice(0,10);
+    const start = prompt('Bắt đầu (YYYY-MM-DD)', new Date(Date.now() - 7*24*3600*1000).toISOString().slice(0,10));
+    if (!start) return;
+    try {
+      const url = `${WORKER_BASE}/admin/logtxt?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&status=Deleted`;
+      const resp = await fetch(url, { headers: { 'x-api-key': key }, cache: 'no-store' });
+      if (!resp.ok) {
+        const t = await resp.text().catch(()=>resp.statusText);
+        return alert('Không lấy được log: ' + t);
+      }
+      const txt = await resp.text();
+// parse NDCSV lines (separator = '|')
+const lines = txt.split(/\r?\n/).filter(Boolean);
+if (lines.length <= 1) { alert('Không có bản ghi xóa trong khoảng thời gian này.'); return; }
+
+// original header (server may output different order) -> map indices
+const rawHeader = lines[0].split('|').map(s => s.trim());
+const lower = rawHeader.map(h => (h || '').toLowerCase());
+
+// helper to find index by many possible names
+function findIdx(names){
+  for(const n of names){
+    const i = lower.indexOf(n.toLowerCase());
+    if(i !== -1) return i;
+  }
+  return -1;
+}
+
+// target order and header labels (exactly as you requested)
+const TARGET_HEADERS = ['Date','Barcode','Vốn','Price','Size'];
+// possible aliases to locate columns in server output
+const aliases = {
+  Date: ['date','deletedat','deleted_at','time','timestamp'],
+  Barcode: ['barcode','code'],
+  'Vốn': ['von','vốn','cost'],
+  Price: ['price','giá','giá tiền'],
+  Size: ['size']
+};
+
+// build rows in target order
+const rows = [ TARGET_HEADERS ];
+for (let i = 1; i < lines.length; i++) {
+  const cols = lines[i].split('|').map(s => s.trim());
+  const out = [];
+  for (const h of TARGET_HEADERS) {
+    const idx = findIdx(aliases[h]);
+    out.push(idx !== -1 ? (cols[idx] !== undefined ? cols[idx] : '') : '');
+  }
+  rows.push(out);
+}
+
+// convert to workbook and download via SheetJS (already included)
+const ws = XLSX.utils.aoa_to_sheet(rows);
+const wb = XLSX.utils.book_new();
+XLSX.utils.book_append_sheet(wb, ws, 'DeletedLog');
+const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+const blob = new Blob([wbout], { type: 'application/octet-stream' });
+const a = document.createElement('a');
+const urlBlob = URL.createObjectURL(blob);
+a.href = urlBlob;
+a.download = `deleted_log_${start}_to_${end}.xlsx`;
+document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(urlBlob);
+
+      document.getElementById('more-control').classList.remove('open');
+    } catch (e) {
+      console.error(e);
+      alert('Lỗi khi xuất log: ' + (e && e.message ? e.message : e));
+    }
+  });
+}
+
 
 /* ---------------------------------------------------------------- */
 
@@ -1577,15 +1660,22 @@ importVonInput.addEventListener('change', async (e) => {
       body: JSON.stringify({ rows })
     });
     const j = await res.json().catch(()=>null);
-    if (!res.ok) {
-      const txt = j && j.error ? j.error : await res.text().catch(()=>res.statusText);
-      throw new Error(txt || ('Status ' + res.status));
-    }
-    alert('Import hoàn tất: ' + (j && j.summary ? `added ${j.summary.added}, updated ${j.summary.updated}, skipped ${j.summary.skipped}` : 'OK'));
-    importVonInput.value = '';
-    // refresh local von display if modal open: optional fetchManifest or just leave as-is
-    await fetchManifest(); // optional to refresh manifest if you want von to appear somewhere
-  } catch (err) {
+if (!res.ok) {
+  const txt = j && j.error ? j.error : await res.text().catch(()=>res.statusText);
+  throw new Error(txt || ('Status ' + res.status));
+}
+
+// show the two numbers requested (count only those present on manifest)
+if (j && j.summary) {
+  const addedNew = Number(j.summary.added_on_manifest || 0);
+  const updatedExisting = Number(j.summary.updated_on_manifest || 0);
+  alert(`Import hoàn tất:\nNhững đôi chưa có giá vốn vừa được gắn vốn: ${addedNew}\nNhững đôi đã có giá vốn vừa được gắn vốn: ${updatedExisting}`);
+} else {
+  alert('Import hoàn tất.');
+}
+importVonInput.value = '';
+await fetchManifest(); // optional: refresh manifest/UI
+ } catch (err) {
     console.error('import-von error', err);
     alert('Import lỗi: ' + (err && err.message ? err.message : err));
     importVonInput.value = '';
