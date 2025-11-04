@@ -637,79 +637,27 @@ async function exportExcelFromModel() {
 document.getElementById('authBtn').addEventListener('click', ()=>{ handleLoginClick(); });
 document.getElementById('btn-export-excel').addEventListener('click', exportExcelFromModel);
 
-// show Export Deleted Log only to admin (reuse updateRoleVisibility pattern)
-const exportDeletedBtn = document.createElement ? document.getElementById('btn-export-delete-log') : null;
+// --- simple download of Logs/Deleted.csv (admin-only) ---
+const exportDeletedBtn = document.getElementById('btn-export-delete-log');
 if (exportDeletedBtn) {
-  // display controlled by updateRoleVisibility() earlier — ensure it is visible only for admin:
-  // place visibility rule near updateRoleVisibility(): exportDeletedBtn.style.display = (role === 'admin') ? 'inline-block' : 'none';
   exportDeletedBtn.addEventListener('click', async () => {
     const auth = await ensureAuthForAction();
     if (!auth.ok) return;
     const key = auth.key;
-    // optionally prompt date range (basic): default last 7 days
-    const end = new Date().toISOString().slice(0,10);
-    const start = prompt('Bắt đầu (YYYY-MM-DD)', new Date(Date.now() - 7*24*3600*1000).toISOString().slice(0,10));
-    if (!start) return;
+    // simply request the single CSV file and download
     try {
-      const url = `${WORKER_BASE}/admin/logtxt?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&status=Deleted`;
+      const url = `${WORKER_BASE}/Logs/Deleted.csv`;
       const resp = await fetch(url, { headers: { 'x-api-key': key }, cache: 'no-store' });
       if (!resp.ok) {
         const t = await resp.text().catch(()=>resp.statusText);
-        return alert('Không lấy được log: ' + t);
+        return alert('Không lấy được Deleted.csv: ' + t);
       }
-      const txt = await resp.text();
-// parse NDCSV lines (separator = '|')
-const lines = txt.split(/\r?\n/).filter(Boolean);
-if (lines.length <= 1) { alert('Không có bản ghi xóa trong khoảng thời gian này.'); return; }
-
-// original header (server may output different order) -> map indices
-const rawHeader = lines[0].split('|').map(s => s.trim());
-const lower = rawHeader.map(h => (h || '').toLowerCase());
-
-// helper to find index by many possible names
-function findIdx(names){
-  for(const n of names){
-    const i = lower.indexOf(n.toLowerCase());
-    if(i !== -1) return i;
-  }
-  return -1;
-}
-
-// target order and header labels (exactly as you requested)
-const TARGET_HEADERS = ['Date','Barcode','Vốn','Price','Size'];
-// possible aliases to locate columns in server output
-const aliases = {
-  Date: ['date','deletedat','deleted_at','time','timestamp'],
-  Barcode: ['barcode','code'],
-  'Vốn': ['von','vốn','cost'],
-  Price: ['price','giá','giá tiền'],
-  Size: ['size']
-};
-
-// build rows in target order
-const rows = [ TARGET_HEADERS ];
-for (let i = 1; i < lines.length; i++) {
-  const cols = lines[i].split('|').map(s => s.trim());
-  const out = [];
-  for (const h of TARGET_HEADERS) {
-    const idx = findIdx(aliases[h]);
-    out.push(idx !== -1 ? (cols[idx] !== undefined ? cols[idx] : '') : '');
-  }
-  rows.push(out);
-}
-
-// convert to workbook and download via SheetJS (already included)
-const ws = XLSX.utils.aoa_to_sheet(rows);
-const wb = XLSX.utils.book_new();
-XLSX.utils.book_append_sheet(wb, ws, 'DeletedLog');
-const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-const blob = new Blob([wbout], { type: 'application/octet-stream' });
-const a = document.createElement('a');
-const urlBlob = URL.createObjectURL(blob);
-a.href = urlBlob;
-a.download = `deleted_log_${start}_to_${end}.xlsx`;
-document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(urlBlob);
-
+      const blob = await resp.blob();
+      const a = document.createElement('a');
+      const u = URL.createObjectURL(blob);
+      a.href = u;
+      a.download = 'Deleted.csv';
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u);
       document.getElementById('more-control').classList.remove('open');
     } catch (e) {
       console.error(e);
@@ -717,6 +665,7 @@ document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(urlBlob
     }
   });
 }
+
 
 
 /* ---------------------------------------------------------------- */
