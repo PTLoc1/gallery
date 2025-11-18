@@ -472,7 +472,7 @@ async function fetchManifest({ forceRefresh=false }={}) {
       if(!r.ok){ const t=await r.text().catch(()=>r.statusText); throw new Error('Refresh failed: ' + t); }
       manifestRaw = await r.json();
     } else {
-      const r = await fetch(WORKER_BASE + '/manifest.json', { cache:'no-store' });
+      const r = await fetch(R2_PUBLIC_BASE + '/manifest.json', { cache:'no-store' });
       if(!r.ok){ const t=await r.text().catch(()=>r.statusText); throw new Error('manifest fetch ' + r.status); }
       manifestRaw = await r.json();
     }
