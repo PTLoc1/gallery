@@ -82,6 +82,33 @@ body.dark .modal-content{ background:#0f1315; color:#e6e9eb }
 .detail-grid{ display:grid; grid-template-columns: repeat(4,1fr); gap:8px }
 @media(max-width:900px){ .detail-grid{ grid-template-columns: repeat(3,1fr); } }
 @media(max-width:480px){ .detail-grid{ grid-template-columns: repeat(2,1fr); } }
+/* Lightbox overlay */
+#lightboxOverlay{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background: rgba(0,0,0,0.75);
+  z-index:250; /* > modal (120) */
+  cursor: zoom-out;
+  transition: opacity 160ms ease;
+}
+#lightboxOverlay.open{ display:flex; opacity:1; }
+#lightboxOverlay img{
+  max-width: 92vw;
+  max-height: 92vh;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  border-radius: 8px;
+  object-fit: contain;
+  transform: scale(0.98);
+  transition: transform 160ms ease, opacity 160ms ease;
+  opacity: 0;
+}
+#lightboxOverlay.open img{
+  transform: scale(1);
+  opacity: 1;
+}
 
 /* progress */
 .progress-panel { position: fixed; right: 12px; bottom: 12px; padding: 10px; width: 360px; max-width: calc(100% - 24px); background: rgba(255,255,255,0.98); border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.12); z-index: 140; display: none; font-size:13px; }
@@ -880,8 +907,16 @@ if(vonSpan){
     const imWrap = document.createElement('div');
     const im = document.createElement('img');
     im.src = `${WORKER_BASE}/${PREFIX}/${encodeURIComponent(String(size).trim())}/${encodeURIComponent(String(bc.code).trim())}/${encodeURIComponent(fn)}`;
-    im.style.width='100%'; im.style.height='100%'; im.style.objectFit='cover';
-    imWrap.appendChild(im);
+    im.style.width = '100%';
+im.style.height = '100%';
+im.style.objectFit = 'cover';
+im.style.cursor = 'zoom-in';            // thêm con trỏ
+im.addEventListener('click', (e) => {   // mở lightbox khi click
+  e.stopPropagation();                  // tránh bubble tới modal
+  openLightbox(im.src);
+});
+imWrap.appendChild(im);
+
     div.appendChild(imWrap);
   }
   modalBody.appendChild(div);
@@ -1993,6 +2028,59 @@ function openExportThumbsUI(){
   document.addEventListener('DOMContentLoaded', initLazy);
   window.initLazyImages = initLazy;
 })();
+
+
+// LIGHTBOX helpers
+function createLightboxIfNeeded(){
+  if(document.getElementById('lightboxOverlay')) return;
+  const lb = document.createElement('div');
+  lb.id = 'lightboxOverlay';
+  // prevent focusing weirdness
+  lb.tabIndex = -1;
+  const img = document.createElement('img');
+  img.alt = 'Preview';
+  // clicking the image should NOT close the lightbox (so user can inspect) —
+  // clicking overlay (background) will close.
+  img.addEventListener('click', (e)=> { e.stopPropagation(); /* do nothing on image click */ });
+  lb.appendChild(img);
+
+  // click on overlay background closes
+  lb.addEventListener('click', (e)=> {
+    if(e.target === lb) closeLightbox();
+  });
+
+  document.body.appendChild(lb);
+
+  // close on ESC
+  document.addEventListener('keydown', function lbEsc(e){
+    if(e.key === 'Escape'){
+      closeLightbox();
+    }
+  });
+}
+
+function openLightbox(src){
+  createLightboxIfNeeded();
+  const lb = document.getElementById('lightboxOverlay');
+  const img = lb.querySelector('img');
+  // set src (use high-res URL if you want)
+  img.src = src;
+  // show
+  lb.classList.add('open');
+  // ensure paint so CSS transitions happen
+  requestAnimationFrame(()=> lb.classList.add('open'));
+}
+
+function closeLightbox(){
+  const lb = document.getElementById('lightboxOverlay');
+  if(!lb) return;
+  lb.classList.remove('open');
+  // clear src after short delay to free memory / stop loading
+  setTimeout(()=> {
+    const img = lb.querySelector('img');
+    if(img) img.src = '';
+  }, 200);
+}
 
 </script>
 </body>
