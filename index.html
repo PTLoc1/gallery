@@ -747,7 +747,8 @@ function makeCard(size, bc, withCheckbox=false){
   const img = document.createElement('img');
   img.dataset.src = src;
   img.alt = bc.code;
-  img.loading = 'eager';
+  img.loading = 'lazy';
+  img.classList.add('lazy-img');
 	
   img.onerror = ()=>{ img.style.opacity=0.6; img.style.objectFit='contain' };
   img.onclick = ()=> openDetails(size, bc);
