@@ -1325,7 +1325,14 @@ const sizeVal = sizeSelect ? sizeSelect.value : (newSizeInput ? newSizeInput.val
     });
     if(duplicates.length > 0){
       const ga = globalAction ? globalAction.value : 'skip';
-      const msg = `Found ${duplicates.length} existing barcode(s) in manifest.\nAction chosen: ${ga}.\n\nTiếp tục? (Hủy để chỉnh lại)`;
+      const codes = duplicates.map(d => {
+	    const effectiveSize = d.sizeVal === '__new__' ? (d.newSizeInput && d.newSizeInput.value || '') : d.sizeVal;
+        return `${effectiveSize}|${d.barcode}`;
+	  });
+	  const N = 50;
+  	  const preview = codes.slice(0, N).join(', ');
+      const more = codes.length > N ? `\n... và ${codes.length - N} mã còn lại` : '';
+	  const msg = `Found ${duplicates.length} existing barcode(s) in manifest.\nAction chosen: ${ga}.\n\nCác barcode trùng (size|code):\n${preview}${more}\n\nTiếp tục? (Hủy để chỉnh lại)`;
       if(!confirm(msg)) return;
     }
 
