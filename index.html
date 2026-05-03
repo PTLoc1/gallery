@@ -636,7 +636,7 @@ async function exportExcelFromModel() {
 
       const uploadedAt = upTimeMap?.[size]?.[code] || '';
       const uploadDateVn = uploadedAt
-        ? new Date(uploadedAt).toLocaleString('vi-VN', {
+        ? new Date(uploadedAt).toLocaleDateString('vi-VN', {
             timeZone: 'Asia/Ho_Chi_Minh',
           })
         : '';
