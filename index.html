@@ -656,16 +656,10 @@ async function exportExcelFromModel() {
       ws[XLSX.utils.encode_cell({ c: 9, r })] = { t: 's', v: 1 };
       ws[XLSX.utils.encode_cell({ c: 10, r })] = { t: 's', v: 1 };
       ws[XLSX.utils.encode_cell({ c: 11, r })] = { t: 's', v: 1 };
-
+	  ws[XLSX.utils.encode_cell({ c: 16, r })] = { t: 's', v: rows[i].thumbUrl || '',};
+	  ws[XLSX.utils.encode_cell({ c: 17, r })] = { t: 's', v: ' ' };
       ws[XLSX.utils.encode_cell({ c: 20, r })] = { t: 's', v: size };
-      ws[XLSX.utils.encode_cell({ c: 24, r })] = {
-        t: 's',
-        v: uploadDateVn || '',
-      };
-      ws[XLSX.utils.encode_cell({ c: 16, r })] = {
-        t: 's',
-        v: rows[i].thumbUrl || '',
-      };
+      ws[XLSX.utils.encode_cell({ c: 24, r })] = { t: 's', v: uploadDateVn || '',};
     }
 
     const newER = startRowZero + rows.length - 1;
