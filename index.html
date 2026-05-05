@@ -361,7 +361,7 @@ function updateRoleVisibility(){
   if(importBtn) importBtn.style.display = (role === 'admin') ? 'inline-block' : 'none';
  // Thumbnail export: visible for any logged-in role (limited OR admin)
   const thumbBtn = document.getElementById('btn-export-thumbs');
-  if(thumbBtn) {thumbBtn.style.display = (role === 'anon') ? 'none' : 'inline-block';}
+  if(thumbBtn) {thumbBtn.style.display = (role === 'admin') ? 'inline-block' : 'none';}
   const exportDeletedBtn = document.getElementById('btn-export-delete-log');
   if (exportDeletedBtn) exportDeletedBtn.style.display = (role === 'admin') ? 'inline-block' : 'none';
 }
@@ -374,8 +374,13 @@ async function handleLoginClick(){
     if(!confirm('Đăng xuất?')) return;
     // sign out
     setRole('anon');
-    setAdminKeySession(null);
-    updateRoleVisibility();
+setAdminKeySession(null);
+multiSelectMode = false;
+selectedItems.clear();
+updateBodyMultiselectClass();
+floatDelete.style.display = 'none';
+updateRoleVisibility();
+renderAccording();
     return;
   }
  
@@ -385,12 +390,13 @@ async function handleLoginClick(){
     const input = String(raw || '').trim();
     if(!input){ alert('Mật khẩu rỗng. Nhập lại?'); continue; }
 
-    if(input.toLowerCase() === 'yes'){
+    if(input.toLowerCase() === 'ok'){
       // admin path: prompt admin key using existing validator
       const key = await promptAndValidateAdminKey();
       if(!key){ alert('Mật khẩu không hợp lệ hoặc huỷ.'); continue; }
       setRole('admin');
       updateRoleVisibility();
+renderAccording();
       return;
     }
     // treat input as admin-key candidate: validate by calling validate-key (lightweight)
@@ -404,9 +410,14 @@ try{
   if (res.status === 200) {
     // key hợp lệ (lightweight check) -> limited
     setAdminKeySession(input);
-    setRole('limited');
-    updateRoleVisibility();
-    return;
+setRole('limited');
+multiSelectMode = false;
+selectedItems.clear();
+updateBodyMultiselectClass();
+floatDelete.style.display = 'none';
+updateRoleVisibility();
+renderAccording();
+return;
   } else if (res.status === 401) {
     alert('Mật khẩu không hợp lệ.');
     continue;
@@ -967,10 +978,11 @@ function renderActionsBar(){
 
   if(activeTab !== 'add'){
     // toggle + "Chọn theo excel" + sort control (REPLACE phần cũ)
+const role = getRole();
 const toggleBtn = document.createElement('button');
 toggleBtn.className = 'btn tab-like';
 toggleBtn.textContent = multiSelectMode ? 'Hủy' : 'Chọn xóa';
-
+toggleBtn.style.display = (role === 'admin') ? 'inline-block' : 'none';
 // helper đảm bảo class body cho multiselect
 function updateBodyMultiselectClass(){
   document.body.classList.toggle('body-multiselect', !!multiSelectMode);
