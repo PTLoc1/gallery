@@ -177,6 +177,7 @@ img{ max-width:100%; display:block }
           <button id="btn-export-excel" class="btn tab-like">Xuất Excel</button>
 	  <button id="btn-export-thumbs" class="btn tab-like" style="display:none">Xuất thumbnail</button>
 	   <button id="btn-export-delete-log" class="btn tab-like" style="display:none">Xuất Log xóa</button>
+	<input id="moreSearchInput" class="search-input" placeholder="Nhập mã đã xóa (VD: 146888) — Enter" style="width:100%; padding:6px 8px; border-radius:6px; border:1px solid #ddd; font-size:13px;" />
         </div>
       </div>
     </div>
@@ -233,11 +234,15 @@ img{ max-width:100%; display:block }
 <!-- floating delete -->
 <div id="floatDelete" class="float-delete" aria-hidden="true"><button id="floatDeleteBtn">Xóa</button></div>
 <input id="import-von-input" type="file" accept=".xlsx,.xls" style="display:none" />
+<!-- Lightbox overlay hiển thị ảnh xem trước -->
+<div id="lightboxOverlay">
+  <img id="lightboxImg" src="" alt="Preview LogDeleted" />
+</div>
 
 <script>
 /* CONFIG */
 const R2_PUBLIC_BASE = "https://pub-9a763a2453ba41939860c4caded896a0.r2.dev";
-const WORKER_BASE = "https://test1.lapproak0.workers.dev";
+const WORKER_BASE = "https://test.lapproak0.workers.dev";
 const PREFIX = "Shoes";
 
 /* DOM */
@@ -1712,6 +1717,58 @@ await fetchManifest(); // optional: refresh manifest/UI
 });
 
 /* init */
+/* --- Lightbox & Search ảnh trong LogDeleted --- */
+const lightboxOverlay = document.getElementById('lightboxOverlay');
+const lightboxImg = document.getElementById('lightboxImg');
+const moreSearchInput = document.getElementById('moreSearchInput');
+
+// Hàm mở Lightbox
+function openLightbox(src) {
+  if (!lightboxOverlay || !lightboxImg) return;
+  lightboxImg.src = src;
+  lightboxOverlay.classList.add('open');
+}
+
+// Click ngoài ảnh (nền tối mờ) để đóng Lightbox
+if (lightboxOverlay) {
+  lightboxOverlay.addEventListener('click', (e) => {
+    if (e.target !== lightboxImg) {
+      lightboxOverlay.classList.remove('open');
+      lightboxImg.src = '';
+    }
+  });
+}
+
+// Lắng nghe phím Enter ở ô Search trong More-Panel
+if (moreSearchInput) {
+  moreSearchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const code = String(moreSearchInput.value || '').trim();
+      if (!code) return;
+
+      // Tạo link tới ảnh thumb đã lưu trong thư mục LogDeleted
+      const targetUrl = `${WORKER_BASE}/LogDeleted/${encodeURIComponent(code)}.jpeg`;
+
+      // Kiểm tra xem ảnh có tồn tại trong LogDeleted không trước khi mở
+      const testImg = new Image();
+      testImg.onload = () => {
+        // Tải ảnh thành công -> Mở xem ảnh
+        openLightbox(targetUrl);
+
+        // Đóng menu More Panel
+        const moreControl = document.getElementById('more-control');
+        if (moreControl) moreControl.classList.remove('open');
+      };
+
+      testImg.onerror = () => {
+        alert(`Không tìm thấy ảnh đã xóa cho mã "${code}" (hoặc ảnh đã quá 2 tháng và bị tự động xóa).`);
+      };
+
+      testImg.src = targetUrl;
+    }
+  });
+}
 async function init(){ priceSortMode = 'asc'; await fetchManifest(); updateBodyMultiselectClass(); floatDelete.style.display = 'none'; renderAccording(); initExportThumbs()}
 init();
 updateRoleVisibility();
