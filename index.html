@@ -2216,7 +2216,22 @@ function openExportThumbsUI(){
   window.initLazyImages = initLazy;
 })();
 
+	function openLightbox(src) {
+  if (!lightboxOverlay || !lightboxImg) return;
+  lightboxImg.src = src;
+  lightboxOverlay.classList.add('open');
+}
 
+// Click ngoài ảnh (nền tối mờ) để đóng Lightbox
+if (lightboxOverlay) {
+  lightboxOverlay.addEventListener('click', (e) => {
+    if (e.target !== lightboxImg) {
+      lightboxOverlay.classList.remove('open');
+      lightboxImg.src = '';
+    }
+  });
+}
+/*
 // LIGHTBOX helpers
 function createLightboxIfNeeded(){
   if(document.getElementById('lightboxOverlay')) return;
@@ -2228,7 +2243,7 @@ function createLightboxIfNeeded(){
   img.alt = 'Preview';
   // clicking the image should NOT close the lightbox (so user can inspect) —
   // clicking overlay (background) will close.
-  img.addEventListener('click', (e)=> { e.stopPropagation(); /* do nothing on image click */ });
+  img.addEventListener('click', (e)=> { e.stopPropagation();  });
   lb.appendChild(img);
 
   // click on overlay background closes
@@ -2268,7 +2283,7 @@ function closeLightbox(){
     if(img) img.src = '';
   }, 200);
 }
-
+*/
 </script>
 </body>
 </html>
